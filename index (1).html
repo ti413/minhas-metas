@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<meta name="theme-color" content="#4CAF87"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Metas"/>
+<link rel="manifest" href="manifest.json"/>
+<title>Minhas Metas</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#F4F8F5;
+  --surface:#FFFFFF;
+  --surface2:#F0F5F2;
+  --primary:#4CAF87;
+  --primary-dark:#357A5E;
+  --primary-light:#D6EFE4;
+  --primary-xlight:#EBF7F2;
+  --text:#1E2D26;
+  --text2:#5A7268;
+  --text3:#8FA89F;
+  --border:#D8EAE1;
+  --red-bg:#FEF0EE;
+  --red:#C0493A;
+  --amber-bg:#FEF7EC;
+  --amber:#A07020;
+  --radius:16px;
+  --radius-sm:10px;
+  --shadow:0 2px 12px rgba(60,120,90,.08);
+}
+html,body{height:100%;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--text);font-size:16px;overflow:hidden;}
+/* LAYOUT */
+#app{display:flex;flex-direction:column;height:100%;max-width:480px;margin:0 auto;position:relative;}
+#topbar{background:var(--surface);padding:env(safe-area-inset-top,12px) 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.topbar-inner{display:flex;align-items:center;justify-content:space-between;}
+.app-title{font-size:19px;font-weight:700;color:var(--primary-dark);}
+.topbar-date{font-size:12px;color:var(--text2);margin-top:1px;}
+#main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 0 80px;}
+#navbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--surface);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom,0);z-index:100;}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 8px;gap:3px;background:none;border:none;color:var(--text3);font-size:10px;font-weight:500;cursor:pointer;transition:color .15s;}
+.nav-btn.active{color:var(--primary-dark);}
+.nav-btn i{font-size:22px;}
+.nav-btn span{font-size:10px;}
+/* PAGES */
+.page{display:none;padding:16px;}
+.page.active{display:block;}
+/* SECTION TITLE */
+.section-hdr{margin-bottom:14px;}
+.section-hdr h2{font-size:17px;font-weight:700;color:var(--text);}
+.section-hdr p{font-size:13px;color:var(--text2);margin-top:2px;}
+/* GOALS GRID */
+.goals-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.goal-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 12px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;user-select:none;}
+.goal-card:active{transform:scale(.97);}
+.goal-card.done{background:var(--primary-xlight);border-color:var(--primary);}
+.gc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.gc-icon{width:38px;height:38px;border-radius:10px;background:var(--surface2);display:flex;align-items:center;justify-content:center;}
+.goal-card.done .gc-icon{background:var(--primary-light);}
+.gc-icon i{font-size:20px;color:var(--text2);}
+.goal-card.done .gc-icon i{color:var(--primary-dark);}
+.gc-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.goal-card.done .gc-check{background:var(--primary);border-color:var(--primary);}
+.gc-check i{font-size:12px;color:#fff;display:none;}
+.goal-card.done .gc-check i{display:block;}
+.gc-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.3;}
+.goal-card.done .gc-name{color:var(--primary-dark);}
+.gc-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+.goal-card.done .gc-sub{color:var(--primary);}
+.gc-input{margin-top:10px;}
+.gc-input input{width:100%;font-size:13px;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);outline:none;}
+.gc-input input:focus{border-color:var(--primary);}
+.goal-card.done .gc-input input{background:var(--primary-light);border-color:var(--primary);}
+/* PROGRESS BAR */
+.day-progress{background:var(--surface);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:var(--shadow);}
+.dp-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.dp-label{font-size:14px;font-weight:600;color:var(--text);}
+.dp-pct{font-size:22px;font-weight:800;color:var(--primary-dark);}
+.dp-bar-bg{height:10px;background:var(--border);border-radius:8px;overflow:hidden;}
+.dp-bar{height:100%;background:linear-gradient(90deg,var(--primary),#6ECBA5);border-radius:8px;transition:width .4s ease;}
+.dp-stats{display:flex;gap:10px;margin-top:12px;}
+.dp-stat{flex:1;background:var(--surface2);border-radius:10px;padding:8px;text-align:center;}
+.dp-stat-val{font-size:15px;font-weight:700;color:var(--primary-dark);}
+.dp-stat-lbl{font-size:10px;color:var(--text3);margin-top:1px;}
+/* SAVE BTN */
+.save-row{margin-bottom:4px;}
+.save-btn{width:100%;padding:14px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius);font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s;box-shadow:0 4px 14px rgba(76,175,135,.3);}
+.save-btn:active{opacity:.85;}
+.save-msg{text-align:center;font-size:12px;color:var(--primary);margin-top:6px;height:16px;}
+/* CALENDAR */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.cal-nav button{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);}
+.cal-nav button:active{background:var(--surface2);}
+.cal-month{font-size:16px;font-weight:700;color:var(--text);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-dow{text-align:center;font-size:11px;font-weight:600;color:var(--text3);padding:4px 0;}
+.cal-day{aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;cursor:pointer;color:var(--text2);border:1.5px solid transparent;transition:all .15s;}
+.cal-day:active{opacity:.7;}
+.cal-day.today{border-color:var(--primary);color:var(--primary-dark);font-weight:700;}
+.cal-day.has-data{background:var(--primary-light);color:var(--primary-dark);}
+.cal-day.perfect{background:var(--primary);color:#fff;}
+.cal-day.perfect.today{border-color:var(--primary-dark);}
+.cal-day.other{opacity:.25;pointer-events:none;}
+.cal-dot{width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.7;margin-top:1px;}
+.cal-legend{display:flex;gap:14px;margin-top:14px;flex-wrap:wrap;}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
+.leg-color{width:12px;height:12px;border-radius:4px;}
+/* DASHBOARD */
+.dash-nav{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.dash-nav button{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2);flex-shrink:0;}
+.dash-nav button:active{background:var(--surface2);}
+.dash-date{flex:1;text-align:center;font-size:14px;font-weight:600;color:var(--text);}
+.metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;}
+.metric-card{background:var(--surface);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);}
+.mc-label{font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:500;}
+.mc-val{font-size:26px;font-weight:800;color:var(--primary-dark);}
+.mc-unit{font-size:12px;color:var(--text3);font-weight:400;}
+.ring-card{background:var(--surface);border-radius:var(--radius);padding:14px;margin-bottom:14px;display:flex;align-items:center;gap:16px;box-shadow:var(--shadow);}
+.ring-wrap{position:relative;width:70px;height:70px;flex-shrink:0;}
+.ring-wrap svg{transform:rotate(-90deg);}
+.ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--primary-dark);}
+.ring-info h3{font-size:15px;font-weight:700;color:var(--text);}
+.ring-info p{font-size:12px;color:var(--text2);margin-top:2px;}
+.goals-detail{background:var(--surface);border-radius:var(--radius);overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow);}
+.gd-title{font-size:13px;font-weight:600;color:var(--text2);padding:12px 14px;border-bottom:1px solid var(--border);}
+.gd-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);}
+.gd-row:last-child{border-bottom:none;}
+.gd-row.done{background:var(--primary-xlight);}
+.gd-icon{width:32px;height:32px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gd-row.done .gd-icon{background:var(--primary-light);}
+.gd-icon i{font-size:16px;color:var(--text2);}
+.gd-row.done .gd-icon i{color:var(--primary-dark);}
+.gd-name{flex:1;font-size:13px;font-weight:500;color:var(--text);}
+.gd-row.done .gd-name{color:var(--primary-dark);}
+.badge{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;}
+.badge-ok{background:var(--primary);color:#fff;}
+.badge-no{background:var(--surface2);color:var(--text3);}
+/* WEEK CHART */
+.week-card{background:var(--surface);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);}
+.week-title{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px;}
+.week-bars{display:flex;gap:6px;align-items:flex-end;height:80px;}
+.wday{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;}
+.wbar{width:100%;border-radius:5px 5px 0 0;background:var(--primary-light);min-height:4px;transition:height .3s;}
+.wbar.full{background:var(--primary);}
+.wlbl{font-size:10px;color:var(--text3);}
+.wpct{font-size:10px;color:var(--text2);}
+/* EMPTY */
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3);}
+.empty-state i{font-size:40px;display:block;margin-bottom:10px;opacity:.4;}
+.empty-state p{font-size:13px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div class="topbar-inner">
+      <div>
+        <div class="app-title">🌿 Minhas Metas</div>
+        <div class="topbar-date" id="topbar-date"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="main">
+    <!-- REGISTRO -->
+    <div id="page-register" class="page active">
+      <div class="day-progress">
+        <div class="dp-row">
+          <span class="dp-label">Progresso do dia</span>
+          <span class="dp-pct" id="dp-pct">0%</span>
+        </div>
+        <div class="dp-bar-bg"><div class="dp-bar" id="dp-bar" style="width:0%"></div></div>
+        <div class="dp-stats">
+          <div class="dp-stat"><div class="dp-stat-val" id="dp-done">0</div><div class="dp-stat-lbl">feitas</div></div>
+          <div class="dp-stat"><div class="dp-stat-val" id="dp-total">7</div><div class="dp-stat-lbl">total</div></div>
+          <div class="dp-stat"><div class="dp-stat-val" id="dp-miss">7</div><div class="dp-stat-lbl">pendentes</div></div>
+        </div>
+      </div>
+      <div class="goals-grid" id="goals-grid"></div>
+      <div class="save-row">
+        <button class="save-btn" onclick="saveDay()"><i class="ti ti-device-floppy"></i> Salvar dia</button>
+        <div class="save-msg" id="save-msg"></div>
+      </div>
+    </div>
+
+    <!-- CALENDÁRIO -->
+    <div id="page-calendar" class="page">
+      <div class="cal-nav">
+        <button onclick="calMove(-1)"><i class="ti ti-chevron-left"></i></button>
+        <span class="cal-month" id="cal-month"></span>
+        <button onclick="calMove(1)"><i class="ti ti-chevron-right"></i></button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="cal-legend">
+        <div class="leg-item"><div class="leg-color" style="background:var(--primary-light)"></div> Parcial</div>
+        <div class="leg-item"><div class="leg-color" style="background:var(--primary)"></div> 100%</div>
+        <div class="leg-item"><div class="leg-color" style="border:2px solid var(--primary);background:transparent"></div> Hoje</div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page">
+      <div class="dash-nav">
+        <button onclick="dashMove(-1)"><i class="ti ti-chevron-left"></i></button>
+        <span class="dash-date" id="dash-date-lbl"></span>
+        <button onclick="dashMove(1)"><i class="ti ti-chevron-right"></i></button>
+      </div>
+      <div id="dash-content"></div>
+    </div>
+  </div>
+
+  <nav id="navbar">
+    <button class="nav-btn active" id="nav-register" onclick="goPage('register')">
+      <i class="ti ti-clipboard-check"></i><span>Registrar</span>
+    </button>
+    <button class="nav-btn" id="nav-calendar" onclick="goPage('calendar')">
+      <i class="ti ti-calendar"></i><span>Calendário</span>
+    </button>
+    <button class="nav-btn" id="nav-dashboard" onclick="goPage('dashboard')">
+      <i class="ti ti-chart-bar"></i><span>Dashboard</span>
+    </button>
+  </nav>
+</div>
+
+<script>
+const GOALS = [
+  {id:'km',   icon:'ti-run',     name:'Corrida / Caminhada', sub:'quilômetros',    hasInput:true, unit:'km'},
+  {id:'gym',  icon:'ti-barbell', name:'Academia',            sub:'treino do dia',  hasInput:false},
+  {id:'sleep',icon:'ti-moon',    name:'Sono',                sub:'horas dormidas', hasInput:true, unit:'h'},
+  {id:'read', icon:'ti-book',    name:'Leitura',             sub:'leitura diária', hasInput:false},
+  {id:'food', icon:'ti-salad',   name:'Alimentação 80/20',   sub:'meta nutricional',hasInput:false},
+  {id:'water',icon:'ti-droplet', name:'Água',                sub:'litros',         hasInput:true, unit:'L'},
+  {id:'bible',icon:'ti-bible',   name:'Bíblia',              sub:'leitura diária', hasInput:false},
+];
+
+const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DOWS_FULL = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const DOWS_SHORT = ['D','S','T','Q','Q','S','S'];
+
+function todayKey(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function keyLabel(k){
+  const [y,m,d]=k.split('-');
+  const dt=new Date(+y,+m-1,+d);
+  const today=todayKey(),yesterday=dateAdd(today,-1);
+  if(k===today) return 'Hoje, '+dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'long'});
+  if(k===yesterday) return 'Ontem, '+dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'long'});
+  return dt.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'long'});
+}
+function dateAdd(key,days){
+  const d=new Date(key+'T12:00:00');d.setDate(d.getDate()+days);return d.toISOString().slice(0,10);
+}
+function load(k){try{return JSON.parse(localStorage.getItem('goals_'+k)||'null');}catch(e){return null;}}
+function save(k,v){try{localStorage.setItem('goals_'+k,JSON.stringify(v));}catch(e){}}
+function score(k){const d=load(k);if(!d)return -1;return GOALS.filter(g=>d[g.id]?.done).length/GOALS.length;}
+
+// TOPBAR DATE
+document.getElementById('topbar-date').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+
+// STATE
+let state={};
+const TODAY=todayKey();
+
+function initState(){
+  const saved=load(TODAY)||{};
+  state={};
+  GOALS.forEach(g=>{state[g.id]={done:saved[g.id]?.done||false,value:saved[g.id]?.value||''};});
+}
+
+function updateProgress(){
+  const done=GOALS.filter(g=>state[g.id]?.done).length;
+  const pct=Math.round(done/GOALS.length*100);
+  document.getElementById('dp-pct').textContent=pct+'%';
+  document.getElementById('dp-bar').style.width=pct+'%';
+  document.getElementById('dp-done').textContent=done;
+  document.getElementById('dp-miss').textContent=GOALS.length-done;
+}
+
+function renderGoals(){
+  const grid=document.getElementById('goals-grid');
+  grid.innerHTML='';
+  GOALS.forEach(g=>{
+    const s=state[g.id];
+    const card=document.createElement('div');
+    card.className='goal-card'+(s.done?' done':'');
+    card.innerHTML=`
+      <div class="gc-top">
+        <div class="gc-icon"><i class="ti ${g.icon}"></i></div>
+        <div class="gc-check"><i class="ti ti-check"></i></div>
+      </div>
+      <div class="gc-name">${g.name}</div>
+      <div class="gc-sub">${g.sub}</div>
+      ${g.hasInput?`<div class="gc-input"><input type="number" inputmode="decimal" min="0" step="0.1" placeholder="${g.unit}" value="${s.value}" id="inp-${g.id}"/></div>`:''}
+    `;
+    card.addEventListener('click',e=>{
+      if(e.target.tagName==='INPUT')return;
+      state[g.id].done=!state[g.id].done;
+      renderGoals();updateProgress();
+    });
+    if(g.hasInput){
+      card.querySelector('input').addEventListener('input',function(){state[g.id].value=this.value;});
+    }
+    grid.appendChild(card);
+  });
+  updateProgress();
+}
+
+function saveDay(){
+  save(TODAY,state);
+  const msg=document.getElementById('save-msg');
+  msg.textContent='✓ Salvo com sucesso!';
+  setTimeout(()=>msg.textContent='',2200);
+}
+
+initState();renderGoals();
+
+// PAGE NAV
+function goPage(p){
+  ['register','calendar','dashboard'].forEach(x=>{
+    document.getElementById('page-'+x).classList.toggle('active',x===p);
+    document.getElementById('nav-'+x).classList.toggle('active',x===p);
+  });
+  if(p==='calendar')renderCal();
+  if(p==='dashboard')renderDash();
+}
+
+// CALENDAR
+let calY=new Date().getFullYear(),calM=new Date().getMonth();
+function calMove(d){calM+=d;if(calM>11){calM=0;calY++;}if(calM<0){calM=11;calY--;}renderCal();}
+function renderCal(){
+  document.getElementById('cal-month').textContent=MONTHS[calM]+' '+calY;
+  const grid=document.getElementById('cal-grid');
+  grid.innerHTML='';
+  DOWS_SHORT.forEach(d=>{const el=document.createElement('div');el.className='cal-dow';el.textContent=d;grid.appendChild(el);});
+  const first=new Date(calY,calM,1).getDay();
+  const days=new Date(calY,calM+1,0).getDate();
+  const prev=new Date(calY,calM,0).getDate();
+  const today=todayKey();
+  for(let i=0;i<first;i++){const el=document.createElement('div');el.className='cal-day other';el.textContent=prev-first+1+i;grid.appendChild(el);}
+  for(let d=1;d<=days;d++){
+    const k=`${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const sc=score(k);
+    const el=document.createElement('div');
+    let cls='cal-day';
+    if(k===today)cls+=' today';
+    if(sc>=0)cls+=' has-data';
+    if(sc===1)cls+=' perfect';
+    el.className=cls;
+    el.innerHTML=d+(sc>=0?'<div class="cal-dot"></div>':'');
+    el.title=sc>=0?Math.round(sc*100)+'% feito':'Sem registro';
+    el.onclick=()=>{dashKey=k;goPage('dashboard');};
+    grid.appendChild(el);
+  }
+}
+
+// DASHBOARD
+let dashKey=todayKey();
+function dashMove(d){dashKey=dateAdd(dashKey,d);renderDash();}
+function renderDash(){
+  document.getElementById('dash-date-lbl').textContent=keyLabel(dashKey);
+  const data=load(dashKey);
+  const content=document.getElementById('dash-content');
+  if(!data){
+    content.innerHTML=`<div class="empty-state"><i class="ti ti-calendar-off"></i><p>Sem registro para este dia</p></div>${weekChart()}`;
+    return;
+  }
+  const done=GOALS.filter(g=>data[g.id]?.done).length;
+  const pct=Math.round(done/GOALS.length*100);
+  const km=parseFloat(data.km?.value)||0;
+  const sl=parseFloat(data.sleep?.value)||0;
+  const wa=parseFloat(data.water?.value)||0;
+
+  const circ=2*Math.PI*28;
+  const dash=circ*(pct/100);
+
+  content.innerHTML=`
+    <div class="ring-card">
+      <div class="ring-wrap">
+        <svg width="70" height="70" viewBox="0 0 70 70">
+          <circle cx="35" cy="35" r="28" fill="none" stroke="var(--primary-light)" stroke-width="8"/>
+          <circle cx="35" cy="35" r="28" fill="none" stroke="var(--primary)" stroke-width="8"
+            stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}" stroke-linecap="round"/>
+        </svg>
+        <div class="ring-pct">${pct}%</div>
+      </div>
+      <div class="ring-info">
+        <h3>${done} de ${GOALS.length} metas</h3>
+        <p>${pct===100?'🎉 Dia perfeito!':pct>=70?'Muito bem, quase lá!':pct>=40?'Continue firme!':'Ainda dá tempo!'}</p>
+      </div>
+    </div>
+    <div class="metrics-grid">
+      <div class="metric-card"><div class="mc-label">Corrida</div><div class="mc-val">${km}<span class="mc-unit"> km</span></div></div>
+      <div class="metric-card"><div class="mc-label">Sono</div><div class="mc-val">${sl}<span class="mc-unit"> h</span></div></div>
+      <div class="metric-card"><div class="mc-label">Água</div><div class="mc-val">${wa}<span class="mc-unit"> L</span></div></div>
+      <div class="metric-card"><div class="mc-label">Sequência</div><div class="mc-val">${getStreak()}<span class="mc-unit"> dias</span></div></div>
+    </div>
+    <div class="goals-detail">
+      <div class="gd-title">Detalhes das metas</div>
+      ${GOALS.map(g=>{
+        const s=data[g.id];const ok=s?.done;
+        return `<div class="gd-row ${ok?'done':''}">
+          <div class="gd-icon"><i class="ti ${g.icon}"></i></div>
+          <div class="gd-name">${g.name}${s?.value?' — '+s.value+(g.unit||'')  :''}</div>
+          <span class="badge ${ok?'badge-ok':'badge-no'}">${ok?'Feito':'Não feito'}</span>
+        </div>`;
+      }).join('')}
+    </div>
+    ${weekChart()}
+  `;
+}
+
+function getStreak(){
+  let k=todayKey(),count=0;
+  for(let i=0;i<60;i++){
+    const sc=score(k);
+    if(sc>0)count++;else if(i>0)break;
+    k=dateAdd(k,-1);
+  }
+  return count;
+}
+
+function weekChart(){
+  const base=new Date(dashKey+'T12:00:00');
+  const dow=base.getDay();
+  const days=[];
+  for(let i=0;i<7;i++){const d=new Date(base);d.setDate(d.getDate()-dow+i);const k=d.toISOString().slice(0,10);days.push({k,lbl:DOWS_FULL[i].slice(0,3),sc:score(k)});}
+  const bars=days.map(d=>{const p=d.sc>=0?Math.round(d.sc*100):0;const h=Math.max(4,p*.64);
+    return `<div class="wday"><div class="wpct">${d.sc>=0?p+'%':''}</div><div class="wbar${p===100?' full':''}" style="height:${h}px"></div><div class="wlbl">${d.lbl}</div></div>`;
+  }).join('');
+  return `<div class="week-card"><div class="week-title">Semana atual</div><div class="week-bars">${bars}</div></div>`;
+}
+
+// SERVICE WORKER
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
