@@ -236,6 +236,8 @@ const GOALS = [
   {id:'bible',icon:'ti-bible',   name:'Bíblia',              sub:'leitura diária', hasInput:false},
 ];
 
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
 const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const DOWS_FULL = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 const DOWS_SHORT = ['D','S','T','Q','Q','S','S'];
@@ -295,7 +297,7 @@ function renderGoals(){
       </div>
       <div class="gc-name">${g.name}</div>
       <div class="gc-sub">${g.sub}</div>
-      ${g.hasInput?`<div class="gc-input"><input type="number" inputmode="decimal" min="0" step="0.1" placeholder="${g.unit}" value="${s.value}" id="inp-${g.id}"/></div>`:''}
+      ${g.hasInput?`<div class="gc-input"><input type="number" inputmode="decimal" min="0" step="0.1" placeholder="${g.unit}" value="${escHtml(s.value)}" id="inp-${g.id}"/></div>`:''}
     `;
     card.addEventListener('click',e=>{
       if(e.target.tagName==='INPUT')return;
@@ -405,7 +407,7 @@ function renderDash(){
         const s=data[g.id];const ok=s?.done;
         return `<div class="gd-row ${ok?'done':''}">
           <div class="gd-icon"><i class="ti ${g.icon}"></i></div>
-          <div class="gd-name">${g.name}${s?.value?' — '+s.value+(g.unit||'')  :''}</div>
+          <div class="gd-name">${g.name}${s?.value?' — '+escHtml(s.value)+(g.unit||''):''}</div>
           <span class="badge ${ok?'badge-ok':'badge-no'}">${ok?'Feito':'Não feito'}</span>
         </div>`;
       }).join('')}
