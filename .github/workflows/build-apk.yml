@@ -1,0 +1,140 @@
+name: Build Android APK (Play Store)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão do app (ex: 1.0.0)'
+        required: true
+        default: '1.0.0'
+      version_code:
+        description: 'Código de versão (número inteiro, ex: 1)'
+        required: true
+        default: '1'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Bubblewrap
+        run: npm install -g @bubblewrap/cli
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android Build Tools
+        run: |
+          sdkmanager "build-tools;34.0.0" "platforms;android-34" "platform-tools"
+
+      - name: Gerar keystore de assinatura
+        run: |
+          keytool -genkeypair \
+            -alias minhas-metas \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -keystore minhas-metas.keystore \
+            -storepass minhasmetas2026 \
+            -keypass minhasmetas2026 \
+            -dname "CN=Minhas Metas, OU=App, O=Campos Tecnologia, L=Brasil, S=Brasil, C=BR"
+
+      - name: Extrair SHA-256 do certificado
+        run: |
+          keytool -list -v \
+            -keystore minhas-metas.keystore \
+            -alias minhas-metas \
+            -storepass minhasmetas2026 | grep "SHA256:" | awk '{print $2}' > sha256.txt
+          echo "SHA-256: $(cat sha256.txt)"
+
+      - name: Criar twa-manifest.json
+        run: |
+          cat > twa-manifest.json << EOF
+          {
+            "packageId": "br.com.campostecnologia.metas",
+            "host": "metas.campostecnologia.cloud",
+            "name": "Minhas Metas",
+            "launcherName": "Metas",
+            "display": "standalone",
+            "themeColor": "#4CAF87",
+            "navigationColor": "#4CAF87",
+            "navigationColorDark": "#357A5E",
+            "navigationDividerColor": "#4CAF87",
+            "navigationDividerColorDark": "#357A5E",
+            "backgroundColor": "#F7F9F7",
+            "enableNotifications": false,
+            "startUrl": "/",
+            "iconUrl": "https://metas.campostecnologia.cloud/icons/icon-512.png",
+            "maskableIconUrl": "https://metas.campostecnologia.cloud/icons/icon-maskable-512.png",
+            "monochromeIconUrl": "https://metas.campostecnologia.cloud/icons/icon-192.png",
+            "appVersion": "${{ github.event.inputs.version }}",
+            "appVersionCode": ${{ github.event.inputs.version_code }},
+            "signingKey": {
+              "path": "../minhas-metas.keystore",
+              "alias": "minhas-metas"
+            },
+            "splashScreenFadeOutDuration": 300,
+            "enableSiteSettingsShortcut": true,
+            "isChromeOSOnly": false,
+            "isMetaQuest": false,
+            "fullScopeUrl": "https://metas.campostecnologia.cloud/",
+            "minSdkVersion": 19,
+            "orientation": "portrait",
+            "fingerprints": [],
+            "features": {},
+            "alphaDependencies": { "enabled": false },
+            "generatorApp": "bubblewrap-cli",
+            "webManifestUrl": "https://metas.campostecnologia.cloud/manifest.json",
+            "fallbackType": "customtabs",
+            "serviceWorkerEnabled": true
+          }
+          EOF
+
+      - name: Build TWA com Bubblewrap
+        env:
+          BUBBLEWRAP_KEYSTORE_PASSWORD: minhasmetas2026
+          BUBBLEWRAP_KEY_PASSWORD: minhasmetas2026
+        run: |
+          mkdir twa-build && cd twa-build
+          bubblewrap init --manifest=https://metas.campostecnologia.cloud/manifest.json \
+            --directory=. 2>/dev/null || true
+          cp ../twa-manifest.json ./twa-manifest.json
+          bubblewrap build \
+            --skipPwaValidation \
+            --keystore ../minhas-metas.keystore \
+            --keystorePassword minhasmetas2026 \
+            --keyAlias minhas-metas \
+            --keyPassword minhasmetas2026
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: minhas-metas-apk-v${{ github.event.inputs.version }}
+          path: |
+            twa-build/app-release-signed.apk
+            twa-build/app-release.aab
+            sha256.txt
+          retention-days: 30
+
+      - name: Mostrar SHA-256 (para assetlinks.json)
+        run: |
+          echo "==========================================="
+          echo "SHA-256 para assetlinks.json:"
+          cat sha256.txt
+          echo "==========================================="
+          echo "Package ID: br.com.campostecnologia.metas"
+          echo "Versão: ${{ github.event.inputs.version }}"
