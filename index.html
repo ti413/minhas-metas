@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Metas" />
+  <meta name="theme-color" content="#4CAF87" />
+  <title>Minhas Metas</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="application-name" content="Metas" />
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <script src="https://js.stripe.com/v3/"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- CONFETE -->
+<div class="conquista-toast" id="conquista-toast"></div>
+<div class="notif-nudge" id="notif-nudge">
+  <div class="notif-nudge-icon">🔔</div>
+  <div class="notif-nudge-body">
+    <div class="notif-nudge-title">Ativar lembretes diários?</div>
+    <div class="notif-nudge-desc">Vou te lembrar às 8h para registrar suas metas e às 20h se o dia ainda estiver aberto.</div>
+    <div class="notif-nudge-btns">
+      <button class="notif-nudge-sim" onclick="ativarNotificacoes()">Sim, quero!</button>
+      <button class="notif-nudge-nao" onclick="dispensarNudgeNotif()">Agora não</button>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH criado dinamicamente via JS -->
+<canvas id="confetti-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:50;display:none;visibility:hidden"></canvas>
+
+<!-- ONBOARDING -->
+<div class="onboarding-overlay" id="onboarding" style="display:none;pointer-events:none">
+  <div class="ob-header">
+    <button class="ob-skip" id="ob-skip" onclick="finishOnboarding()">Pular</button>
+  </div>
+  <div class="ob-content" id="ob-content">
+    <!-- dinâmico -->
+  </div>
+  <div class="ob-footer">
+    <div class="ob-progress" id="ob-progress"></div>
+    <button class="ob-btn" id="ob-btn" onclick="nextSlide()">Próximo →</button>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">🌿 <span>Minhas</span>Metas</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button id="theme-btn" onclick="toggleTheme()" aria-label="Alternar tema" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px;border-radius:8px;transition:background .15s" title="Modo escuro">🌙</button>
+      <div class="date-badge" id="today-label"></div>
+      <!-- Botão login visível quando não logado -->
+      <button id="login-btn" onclick="openAuthModal()" style="display:flex;align-items:center;gap:6px;background:var(--green);color:#fff;border:none;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:opacity .15s;white-space:nowrap" title="Entrar para salvar na nuvem">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Entrar
+      </button>
+      <div class="user-menu" id="user-menu" style="display:none">
+        <button class="user-avatar" id="user-avatar" onclick="toggleUserMenu()">?</button>
+        <div class="user-dropdown" id="user-dropdown">
+          <!-- Header do perfil -->
+          <div class="user-dropdown-header">
+            <div class="user-dropdown-nome" id="user-nome-label">Usuário</div>
+            <div class="user-dropdown-email" id="user-email-label"></div>
+            <div id="user-nivel-badge" class="nivel-badge bronze">⭐ Bronze</div>
+            <div class="xp-bar-wrap">
+              <div class="xp-bar-label">
+                <span id="user-xp-label">0 XP</span>
+                <span id="user-xp-next">próximo: 100 XP</span>
+              </div>
+              <div class="xp-bar"><div class="xp-bar-fill" id="user-xp-fill" style="width:0%"></div></div>
+            </div>
+          </div>
+          <!-- Stats rápidas -->
+          <div class="profile-stats-row">
+            <div class="profile-stat">
+              <div class="profile-stat-n" id="ps-streak">0</div>
+              <div class="profile-stat-l">🔥 Sequência</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-n" id="ps-dias">0</div>
+              <div class="profile-stat-l">✅ Dias</div>
+            </div>
+            <div class="profile-stat">
+              <div class="profile-stat-n" id="ps-conquistas">0</div>
+              <div class="profile-stat-l">🏆 Badges</div>
+            </div>
+          </div>
+          <!-- Ações -->
+          <button class="user-dropdown-btn" onclick="openPerfilModal()">👤 Editar perfil</button>
+          <button class="user-dropdown-btn" onclick="syncNow()">☁️ Sincronizar</button>
+          <button class="user-dropdown-btn danger" onclick="logoutUser()">Sair</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOJE -->
+  <div class="screen active" id="screen-hoje">
+    <div class="progress-area">
+      <div class="ring-wrap">
+        <svg width="100" height="100" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="40" fill="none" stroke="var(--green-pale)" stroke-width="9" style="stroke:var(--green-pale)"/>
+          <circle id="ring-dash" cx="50" cy="50" r="40" fill="none" stroke="#3d9e72" stroke-width="9"
+            stroke-dasharray="251.3" stroke-dashoffset="251.3" stroke-linecap="round"/>
+        </svg>
+        <div class="ring-label">
+          <div class="ring-pct" id="ring-pct">0%</div>
+          <div class="ring-sub">do dia</div>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat green"><div class="stat-n" id="stat-feitas">0</div><div class="stat-l">feitas</div></div>
+        <div class="stat"><div class="stat-n" id="stat-total">0</div><div class="stat-l">total</div></div>
+        <div class="stat"><div class="stat-n" id="stat-pendentes">0</div><div class="stat-l">pendentes</div></div>
+      </div>
+    </div>
+
+    <!-- HUMOR -->
+    <div class="humor-section">
+      <div class="humor-label">Como está seu humor hoje?</div>
+      <div class="humor-btns">
+        <button class="humor-btn" id="humor-ruim" onclick="setHumor('ruim')">
+          <span class="humor-emoji">😔</span>Ruim
+        </button>
+        <button class="humor-btn" id="humor-ok" onclick="setHumor('ok')">
+          <span class="humor-emoji">😐</span>Ok
+        </button>
+        <button class="humor-btn" id="humor-otimo" onclick="setHumor('otimo')">
+          <span class="humor-emoji">😄</span>Ótimo
+        </button>
+      </div>
+    </div>
+
+    <!-- TRIAL BANNER -->
+    <div id="trial-banner-wrap"></div>
+
+    <!-- PLANTINHA -->
+    <div class="plant-wrap" id="plant-wrap">
+      <div class="plant-container">
+        <div class="plant-emoji" id="plant-emoji"></div>
+      </div>
+      <div class="plant-streak" id="plant-streak">Plante um hábito hoje</div>
+    </div>
+
+
+    <div class="section-title">
+      Metas de hoje
+      <button class="add-btn" onclick="openAddModal()">
+        <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        + Nova
+      </button>
+    </div>
+
+    <div class="metas-list" id="metas-list"></div>
+
+    <!-- BANNER DIA CONCLUÍDO -->
+    <div id="day-done-banner" style="display:none;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;gap:12px;text-align:center">
+      <div style="font-size:64px;line-height:1">🌙</div>
+      <div style="font-size:22px;font-weight:700;color:var(--ink);margin-top:4px" id="day-done-title">Dia concluído!</div>
+      <div style="font-size:14px;color:var(--muted);line-height:1.6" id="day-done-sub">Novo dia começa à meia-noite.<br>Descanse bem! 😴</div>
+      <div style="margin-top:8px;padding:10px 20px;background:var(--green-pale);border-radius:var(--radius-full);font-size:13px;font-weight:600;color:var(--green)">
+        ✨ Seu progresso foi salvo
+      </div>
+    </div>
+
+    <div class="save-bar" id="save-bar">
+      <button class="save-btn primary" style="width:100%" onclick="openEndDay()">✓ Fechar o dia</button>
+    </div>
+    <div id="login-nudge" style="display:none"></div>
+  </div>
+
+  <!-- CALENDÁRIO -->
+  <div class="screen" id="screen-cal">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="changeMonth(-1)">&#8249;</button>
+      <div class="cal-month" id="cal-month-label"></div>
+      <button class="cal-nav" onclick="changeMonth(1)">&#8250;</button>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="cal-legend">
+      <div class="legend-item">
+        <div class="legend-dot" style="background:var(--surface);border:1px solid var(--border)"></div> Sem dados
+      </div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(61,158,114,.18)"></div> 1–49%</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(61,158,114,.45)"></div> 50–99%</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#3d9e72"></div> 100%</div>
+    </div>
+    <div class="cal-detail" id="cal-detail">
+      <div class="cal-detail-title" id="cal-detail-title"></div>
+      <div id="cal-detail-items"></div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="screen" id="screen-dash">
+    <div class="dash-inner">
+
+      <!-- VISÃO GERAL DA SEMANA -->
+      <div class="dash-section">
+        <div class="dash-title">📊 Esta semana</div>
+        <div class="overview-grid" id="overview-grid"></div>
+      </div>
+
+      <!-- CONQUISTAS -->
+      <div class="dash-section">
+        <div class="dash-title">🏆 Conquistas</div>
+        <div class="conquistas-grid" id="conquistas-grid"></div>
+      </div>
+
+      <div class="dash-section">
+        <div class="dash-title">🔥 Sequência atual</div>
+        <div class="streak-card">
+          <div class="streak-num" id="streak-num">0</div>
+          <div class="streak-info">
+            <div class="streak-label" id="streak-label">dias seguidos</div>
+            <div class="streak-sub" id="streak-sub">Complete hoje para começar!</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <div class="streak-fire">🔥</div>
+            <button onclick="compartilharStreak()" id="share-streak-btn" style="display:none;background:none;border:none;cursor:pointer;font-size:11px;color:var(--green);font-weight:600;font-family:inherit;padding:0">Compartilhar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-section">
+        <div class="dash-title">📈 Resumo</div>
+        <div class="insight-grid">
+          <div class="insight-card">
+            <div class="insight-val" id="week-avg">0%</div>
+            <div class="insight-label">média da semana</div>
+          </div>
+          <div class="insight-card">
+            <div class="insight-val" id="best-day-label">—</div>
+            <div class="insight-label">melhor dia</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-section">
+        <div class="dash-title">⭐ Meta mais consistente</div>
+        <div class="best-meta-card">
+          <div class="best-meta-icon">⭐</div>
+          <div>
+            <div class="best-meta-name" id="best-meta-name">Sem dados ainda</div>
+            <div class="best-meta-pct" id="best-meta-pct">Registre dias para ver</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-section">
+        <div class="dash-title">📅 Últimos 7 dias</div>
+        <div class="bar-chart" id="bar-chart"></div>
+      </div>
+
+      <!-- CORRELAÇÃO HUMOR -->
+      <div class="dash-section humor-corr-section" id="humor-corr-section" style="display:none">
+        <div class="dash-title">😊 Humor × desempenho</div>
+        <div class="humor-corr-grid">
+          <div class="humor-corr-card">
+            <div class="humor-corr-emoji">😔</div>
+            <div class="humor-corr-pct" id="corr-ruim-pct">—</div>
+            <div class="humor-corr-label">nos dias ruins</div>
+            <div class="humor-corr-dias" id="corr-ruim-dias"></div>
+          </div>
+          <div class="humor-corr-card">
+            <div class="humor-corr-emoji">😐</div>
+            <div class="humor-corr-pct" id="corr-ok-pct">—</div>
+            <div class="humor-corr-label">nos dias ok</div>
+            <div class="humor-corr-dias" id="corr-ok-dias"></div>
+          </div>
+          <div class="humor-corr-card">
+            <div class="humor-corr-emoji">😄</div>
+            <div class="humor-corr-pct" id="corr-otimo-pct">—</div>
+            <div class="humor-corr-label">nos dias ótimos</div>
+            <div class="humor-corr-dias" id="corr-otimo-dias"></div>
+          </div>
+        </div>
+        <div class="humor-insight" id="humor-insight"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TREINO -->
+  <div class="screen treino-screen" id="screen-treino">
+    <!-- Header -->
+    <div style="padding:14px 20px 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div style="font-size:17px;font-weight:700;color:var(--ink)">💪 Treino</div>
+      <button onclick="openAddExercicioModal()" class="add-btn">
+        <svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        + Exercício
+      </button>
+    </div>
+    <!-- Dias da semana -->
+    <div id="treino-dias-bar" style="display:flex;gap:6px;padding:10px 20px;overflow-x:auto;flex-shrink:0;scrollbar-width:none"></div>
+    <!-- Info do dia + volume -->
+    <div style="padding:0 20px 10px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:15px;font-weight:700;color:var(--ink)" id="treino-dia-nome">Segunda-feira</div>
+        <div style="font-size:12px;color:var(--green);font-weight:600;margin-top:1px" id="treino-grupo-muscular">🦵 Perna</div>
+      </div>
+      <div id="treino-volume-info" style="text-align:right;font-size:11px;color:var(--muted)"></div>
+    </div>
+    <!-- Lista de exercícios -->
+    <div style="flex:1;overflow-y:auto;padding:0 20px 8px" id="exercicios-list-treino"></div>
+    <!-- Footer -->
+    <div style="padding:10px 20px 24px;flex-shrink:0;border-top:1px solid var(--border);display:flex;gap:8px">
+      <button id="treino-concluido-btn2" onclick="toggleTreinoConcluido()" style="flex:1;padding:13px;border-radius:var(--radius);border:none;background:var(--green);color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">
+        ✓ Feito
+      </button>
+    </div>
+  </div>
+
+  <!-- EXTRAS -->
+  <div class="screen" id="screen-extras">
+    <!-- Sub-tabs -->
+    <div class="extras-tabs">
+      <button class="extras-tab active" id="etab-livros" onclick="switchExtrasTab('livros')"><span class="tab-icon">📚</span>Livros</button>
+      <button class="extras-tab" id="etab-metas-longas" onclick="switchExtrasTab('metas-longas')"><span class="tab-icon">🎯</span>Objetivos</button>
+      <button class="extras-tab" id="etab-diario" onclick="switchExtrasTab('diario')"><span class="tab-icon">💭</span>Diário</button>
+      <button class="extras-tab" id="etab-financas" onclick="switchExtrasTab('financas')"><span class="tab-icon">💰</span>Finanças</button>
+    </div>
+
+    <!-- Painel Livros -->
+    <div class="extras-panel active" id="epanel-livros">
+      <div class="livros-header">
+        <div class="livros-title">Meus Livros</div>
+        <button class="livros-add" onclick="openAddLivroModal()">
+          <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Adicionar
+        </button>
+      </div>
+      <div class="livros-stats" id="livros-stats"></div>
+      <div class="livros-list" id="livros-list"></div>
+    </div>
+
+    <!-- Painel Metas Longas -->
+    <div class="extras-panel" id="epanel-metas-longas">
+      <div class="livros-header">
+        <div class="livros-title">🎯 Objetivos</div>
+        <button class="livros-add" onclick="openAddMetaLongaModal()">
+          <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nova
+        </button>
+      </div>
+      <div id="metas-longas-list" style="padding:0 20px;display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+
+    <!-- Painel Diário -->
+    <div class="extras-panel" id="epanel-diario">
+      <div class="livros-header">
+        <div class="livros-title">💭 Diário</div>
+        <div style="font-size:12px;color:var(--muted)" id="diario-date-label"></div>
+      </div>
+      <div style="padding:0 20px;flex:1;display:flex;flex-direction:column;gap:10px">
+        <textarea id="diario-texto" placeholder="O que você aprendeu hoje? Como foi seu dia? O que você é grato?" style="flex:1;min-height:180px;width:100%;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);padding:14px;font-size:14px;font-family:inherit;color:var(--ink);resize:none;outline:none;line-height:1.6;-webkit-text-fill-color:var(--ink)"></textarea>
+        <div style="display:flex;gap:8px">
+          <button onclick="salvarDiario()" style="flex:1;padding:12px;border-radius:var(--radius);border:none;background:var(--green);color:white;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit">Salvar entrada</button>
+          <button id="diario-coach-btn" onclick="enviarDiarioAoCoach()" style="display:none;padding:12px 14px;border-radius:var(--radius);border:1.5px solid var(--green);background:var(--green-pale);color:var(--green);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">🤖 Pedir reflexão</button>
+        </div>
+        <div style="font-size:13px;font-weight:500;color:var(--muted);margin-top:4px">Entradas anteriores</div>
+        <div id="diario-historico" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+
+    <!-- Painel Finanças -->
+    <div class="extras-panel" id="epanel-financas">
+      <div class="livros-header">
+        <div class="livros-title">💰 Finanças</div>
+        <button class="livros-add" onclick="openAddTransacaoModal()">
+          <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Lançar
+        </button>
+      </div>
+      <div style="padding:0 20px;flex:1;overflow-y:auto">
+        <!-- Saldo do mês -->
+        <div id="financas-saldo" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px"></div>
+        <!-- Gráfico por categoria -->
+        <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:8px">Gastos por categoria</div>
+        <div id="financas-grafico" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
+        <!-- Lista de transações -->
+        <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:8px">Últimos lançamentos</div>
+        <div id="financas-lista" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+
+  <!-- SCREEN COACH -->
+  <div class="screen" id="screen-coach">
+    <div class="coach-header">
+      <div class="coach-title">🤖 Meu Coach</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button onclick="openReflexoesModal()" style="background:none;border:1px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;transition:all .15s" title="Ver reflexões salvas" id="reflexoes-btn">🔖 Reflexões</button>
+        <div class="coach-status"><div class="coach-status-dot"></div>IA ativa</div>
+      </div>
+    </div>
+    <div class="coach-insight-card" id="coach-insight-card" style="display:none" onclick="toggleInsightCard()">
+      <div class="coach-insight-label"><span>✨</span> Insight do dia<span class="coach-insight-toggle">▾</span></div>
+      <div class="coach-insight-text" id="coach-insight-text"></div>
+      <div class="coach-insight-meta" id="coach-insight-meta"></div>
+    </div>
+    <!-- Cards de seleção de mentor -->
+    <div class="coach-mentor-cards" id="coach-mentor-cards">
+      <div class="coach-mentor-card" data-mentor="jesus" onclick="setMentor('jesus')">
+        <div class="coach-mentor-card-avatar" style="background:linear-gradient(135deg,#e8f4fd,#c8dff5)">✝️</div>
+        <div class="coach-mentor-card-name">Jesus</div>
+        <div class="coach-mentor-card-spec">Palavra de Deus, fé, propósito e paz</div>
+      </div>
+      <div class="coach-mentor-card" data-mentor="huberman" onclick="setMentor('huberman')">
+        <div class="coach-mentor-card-avatar" style="background:linear-gradient(135deg,#e8f5ef,#c8ecd9)">🧠</div>
+        <div class="coach-mentor-card-name">Eslen Delanogare</div>
+        <div class="coach-mentor-card-spec">Neurociência, hábitos e autocontrole</div>
+      </div>
+    </div>
+    <!-- Barra de mentor ativo (aparece durante conversa) -->
+    <div class="coach-active-bar" id="coach-active-bar">
+      <div class="coach-active-avatar" id="coach-active-avatar"></div>
+      <div class="coach-active-name" id="coach-active-name"></div>
+      <button class="coach-clear-btn" onclick="clearCoachHistory()" title="Limpar conversa">🗑️</button>
+      <button class="coach-active-switch" onclick="switchCoachMentor()">Trocar coach</button>
+    </div>
+    <div id="coach-relatorio-wrap"></div>
+    <div class="coach-messages" id="coach-messages">
+      <div class="coach-empty" id="coach-empty">
+        <div class="coach-empty-icon">✝️</div>
+        <div class="coach-empty-title">Escolha seu coach</div>
+        <div class="coach-empty-sub">Selecione Jesus ou Eslen Delanogare para começar</div>
+      </div>
+    </div>
+    <div class="coach-quick-btns-wrap hidden" id="coach-quick-btns-wrap">
+      <div class="coach-quick-label">Sugestões rápidas</div>
+      <div class="coach-quick-btns" id="coach-quick-btns-inner"></div>
+    </div>
+    <div class="coach-input-area">
+      <textarea class="coach-input" id="coach-input" placeholder="Pergunte algo sobre sua vida..." rows="1" onkeydown="coachKeyDown(event)" oninput="autoResizeCoachInput(this)"></textarea>
+      <button class="coach-send-btn" id="coach-send-btn" onclick="coachSend()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+
+
+  <div class="bottom-bar">
+    <button class="bar-btn active" id="btn-hoje" onclick="switchTab('hoje')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="tab-label">Hoje</span>
+    </button>
+    <button class="bar-btn" id="btn-cal" onclick="switchTab('cal')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span class="tab-label">Calendário</span>
+    </button>
+    <button class="bar-btn" id="btn-treino" onclick="switchTab('treino')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5h11"/><path d="M6.5 17.5h11"/><path d="M3 9.5h3v5H3z"/><path d="M18 9.5h3v5h-3z"/></svg>
+      <span class="tab-label">Treino</span>
+    </button>
+    <button class="bar-btn" id="btn-extras" onclick="switchTab('extras')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+      <span class="tab-label">Extras</span>
+    </button>
+    <button class="bar-btn" id="btn-dash" onclick="switchTab('dash')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span class="tab-label">Dashboard</span>
+    </button>
+    <button class="bar-btn" id="btn-coach" onclick="switchTab('coach')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+      <span class="tab-label">Coach</span>
+    </button>
+  </div>
+
+</div>
+
+<!-- REFLEXÕES MODAL -->
+<div class="reflexoes-overlay" id="reflexoes-modal" style="display:none" onclick="closeReflexoesModal(event)">
+  <div class="reflexoes-sheet" onclick="event.stopPropagation()">
+    <div class="reflexoes-header">
+      <div class="reflexoes-title">🔖 Reflexões Salvas</div>
+      <button class="reflexoes-close" onclick="closeReflexoesModal()">×</button>
+    </div>
+    <div class="reflexoes-list" id="reflexoes-list"></div>
+  </div>
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-overlay" id="add-modal" style="display:none" onclick="closeAddModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Nova meta</div>
+    <input type="text" id="meta-input" placeholder="Ex: Meditar 10 minutos" maxlength="60" />
+    <div style="margin:10px 0">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Categoria (opcional)</div>
+      <div id="categoria-chips" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
+    <div class="modal-row">
+      <label>Repetir todo dia (recorrente)</label>
+      <button class="toggle" id="recurrent-toggle" onclick="this.classList.toggle('on')" aria-label="Toggle recorrente"></button>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeAddModal()">Cancelar</button>
+      <button class="modal-btn confirm" onclick="addMeta()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD LIVRO MODAL -->
+<div class="modal-overlay" id="add-livro-modal" style="display:none" onclick="closeAddLivroModal(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:90vh;overflow-y:auto">
+    <div class="modal-title">Adicionar livro</div>
+
+    <!-- Upload de capa -->
+    <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:14px">
+      <div id="capa-preview" onclick="document.getElementById('capa-upload').click()" style="width:64px;height:90px;border-radius:8px;background:var(--green-pale);border:2px dashed var(--border);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:var(--muted);text-align:center;flex-shrink:0;transition:all .2s">
+        <div style="font-size:22px;margin-bottom:4px">📷</div>
+        Foto da capa
+      </div>
+      <input type="file" id="capa-upload" accept="image/*" style="display:none" onchange="previewCapa(this)" />
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <input id="livro-titulo-manual" type="text" placeholder="Título do livro *" style="width:100%;padding:10px 12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);font-size:14px;font-family:inherit;outline:none;color:var(--ink)" />
+        <input id="livro-autor-manual" type="text" placeholder="Autor" style="width:100%;padding:10px 12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);font-size:14px;font-family:inherit;outline:none;color:var(--ink)" />
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Total de páginas</div>
+        <input id="livro-paginas-manual" type="number" placeholder="Ex: 320" style="width:100%;padding:10px 12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);font-size:14px;font-family:inherit;outline:none;color:var(--ink)" />
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Página atual</div>
+        <input id="livro-pagina-atual-manual" type="number" placeholder="Ex: 0" style="width:100%;padding:10px 12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);font-size:14px;font-family:inherit;outline:none;color:var(--ink)" />
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeAddLivroModal()">Cancelar</button>
+      <button class="modal-btn confirm" onclick="adicionarLivroManual()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- UPDATE PAGINAS MODAL -->
+<div class="modal-overlay update-paginas-modal" id="update-paginas-modal" style="display:none" onclick="closeUpdatePaginas(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title" id="update-livro-titulo">Atualizar progresso</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:12px" id="update-livro-info"></div>
+    <input type="number" id="update-paginas-input" placeholder="Página atual" style="width:100%;padding:11px 14px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);font-size:16px;font-family:inherit;outline:none;margin-bottom:12px" />
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeUpdatePaginas()">Cancelar</button>
+      <button class="modal-btn confirm" onclick="salvarProgresso()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD TRANSACAO MODAL -->
+<div class="modal-overlay" id="add-transacao-modal" style="display:none;pointer-events:none" onclick="closeTransacaoModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Novo lançamento</div>
+    <!-- Tipo: gasto ou entrada -->
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button id="tipo-gasto-btn" class="tipo-btn active" onclick="setTipoTransacao('gasto')">📉 Gasto</button>
+      <button id="tipo-entrada-btn" class="tipo-btn" onclick="setTipoTransacao('entrada')">📈 Entrada</button>
+    </div>
+    <input id="trans-valor" type="number" inputmode="decimal" placeholder="Valor (R$)" style="width:100%;padding:11px 14px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);font-size:16px;font-family:inherit;outline:none;color:var(--ink);margin-bottom:10px"/>
+    <input id="trans-desc" type="text" placeholder="Descrição (opcional)" style="width:100%;padding:11px 14px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);font-size:14px;font-family:inherit;outline:none;color:var(--ink);margin-bottom:10px"/>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Categoria</div>
+    <div id="trans-categorias" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeTransacaoModal()">Cancelar</button>
+      <button class="modal-btn confirm" onclick="salvarTransacao()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD META LONGA MODAL -->
+<div class="modal-overlay" id="add-meta-longa-modal" style="display:none;pointer-events:none" onclick="closeMetaLongaModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Nova meta de longo prazo</div>
+    <input id="ml-titulo" type="text" placeholder="Ex: Ler 12 livros em 2026" style="width:100%;padding:11px 14px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);font-size:14px;font-family:inherit;outline:none;color:var(--ink);margin-bottom:10px"/>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Meta (número)</div>
+        <input id="ml-total" type="number" placeholder="Ex: 12" style="width:100%;padding:10px 12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);font-size:14px;font-family:inherit;outline:none;color:var(--ink)"/>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Prazo</div>
+        <input id="ml-prazo" type="date" style="width:100%;padding:10px 12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);font-size:13px;font-family:inherit;outline:none;color:var(--ink)"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeMetaLongaModal()">Cancelar</button>
+      <button class="modal-btn confirm" onclick="salvarMetaLonga()">Criar meta</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD EXERCICIO MODAL -->
+<div class="modal-overlay" id="add-exercicio-modal" style="display:none;pointer-events:none;z-index:600" onclick="closeAddExercicioModal(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:85vh;overflow-y:auto">
+    <div class="modal-title">➕ Exercício</div>
+    <input id="ex-busca" type="text" placeholder="🔍 Buscar na biblioteca..." oninput="filtrarBiblioteca(this.value)"
+      style="width:100%;padding:10px 14px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);font-size:14px;font-family:inherit;outline:none;color:var(--ink);margin-bottom:8px;box-sizing:border-box"/>
+    <div id="ex-biblioteca-list" style="max-height:220px;overflow-y:auto;margin-bottom:12px;border:1px solid var(--border);border-radius:var(--radius);"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Ou digite o nome</div>
+    <input id="ex-nome" type="text" placeholder="Ex: Supino Reto"
+      style="width:100%;padding:11px 14px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);font-size:14px;font-family:inherit;outline:none;color:var(--ink);margin-bottom:12px;box-sizing:border-box"/>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Séries</div>
+    <div style="display:flex;gap:8px;margin-bottom:16px" id="ex-series-btns">
+      <button onclick="setExSeries(3)" class="ex-series-btn" id="esb-3">3</button>
+      <button onclick="setExSeries(4)" class="ex-series-btn active" id="esb-4">4</button>
+      <button onclick="setExSeries(5)" class="ex-series-btn" id="esb-5">5</button>
+      <button onclick="setExSeries(6)" class="ex-series-btn" id="esb-6">6</button>
+    </div>
+    <input id="ex-series" type="hidden" value="4"/>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeAddExercicioModal()">Cancelar</button>
+      <button class="modal-btn confirm" onclick="addExercicio()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- END DAY MODAL -->
+<div class="modal-overlay" id="end-modal" style="display:none;z-index:600" onclick="closeEndModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="end-modal-inner">
+      <div class="end-emoji" id="end-emoji">🎉</div>
+      <div class="end-title" id="end-title">Dia concluído!</div>
+      <div class="end-sub" id="end-sub"></div>
+      <div class="end-ring-wrap">
+        <svg width="90" height="90" viewBox="0 0 90 90">
+          <circle cx="45" cy="45" r="35" fill="none" stroke="#e8f5ef" stroke-width="8"/>
+          <circle id="end-ring" cx="45" cy="45" r="35" fill="none" stroke="#3d9e72" stroke-width="8"
+            stroke-dasharray="219.9" stroke-dashoffset="219.9" stroke-linecap="round" transform="rotate(-90 45 45)"/>
+        </svg>
+        <div class="end-ring-label">
+          <div class="end-ring-pct" id="end-pct-ring">0%</div>
+        </div>
+      </div>
+      <div class="end-stats">
+        <div class="stat green"><div class="stat-n" id="end-feitas">0</div><div class="stat-l">feitas</div></div>
+        <div class="stat"><div class="stat-n" id="end-total">0</div><div class="stat-l">total</div></div>
+        <div class="stat"><div class="stat-n" id="end-pct">0%</div><div class="stat-l">conclusão</div></div>
+      </div>
+      <button class="modal-btn confirm" style="width:100%" onclick="confirmEndDay()">Registrar e fechar o dia</button>
+    </div>
+  </div>
+</div>
+
+  <!-- TELA DIA ENCERRADO -->
+  <div id="day-closed-screen" style="display:none;position:fixed;inset:0;background:var(--white);z-index:999;overflow-y:auto;padding:32px 20px;box-sizing:border-box">
+    <div style="max-width:420px;margin:0 auto">
+      <!-- Header -->
+      <div style="text-align:center;margin-bottom:32px">
+        <div id="dcs-emoji" style="font-size:56px;margin-bottom:12px">🎯</div>
+        <div id="dcs-title" style="font-size:26px;font-weight:700;color:var(--ink)">Dia encerrado!</div>
+        <div id="dcs-date" style="font-size:13px;color:var(--muted);margin-top:6px;font-family:monospace"></div>
+      </div>
+
+      <!-- Ring de progresso -->
+      <div style="display:flex;justify-content:center;margin-bottom:28px">
+        <div style="position:relative;width:120px;height:120px">
+          <svg width="120" height="120" style="transform:rotate(-90deg)">
+            <circle cx="60" cy="60" r="50" fill="none" stroke="var(--border)" stroke-width="10"/>
+            <circle id="dcs-ring" cx="60" cy="60" r="50" fill="none" stroke="var(--green)" stroke-width="10"
+              stroke-dasharray="314" stroke-dashoffset="314" stroke-linecap="round" style="transition:stroke-dashoffset .8s ease"/>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column">
+            <div id="dcs-pct" style="font-size:24px;font-weight:800;color:var(--ink)">0%</div>
+            <div style="font-size:10px;color:var(--muted)">do dia</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:24px">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+          <div id="dcs-feitas" style="font-size:24px;font-weight:800;color:var(--green)">0</div>
+          <div style="font-size:11px;color:var(--muted)">feitas</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+          <div id="dcs-total" style="font-size:24px;font-weight:800;color:var(--ink)">0</div>
+          <div style="font-size:11px;color:var(--muted)">total</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+          <div id="dcs-streak" style="font-size:24px;font-weight:800;color:var(--ink)">0</div>
+          <div style="font-size:11px;color:var(--muted)">sequência</div>
+        </div>
+      </div>
+
+      <!-- Lista de metas do dia -->
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:20px">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Metas de hoje</div>
+        <div id="dcs-metas-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+
+      <!-- Humor -->
+      <div id="dcs-humor-wrap" style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:20px;display:none">
+        <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Humor registrado</div>
+        <div id="dcs-humor" style="font-size:22px"></div>
+      </div>
+
+      <!-- Mensagem motivacional -->
+      <div id="dcs-msg" style="background:var(--green-pale);border:1px solid var(--green);border-radius:14px;padding:16px;margin-bottom:24px;text-align:center;font-size:14px;color:var(--green);font-weight:500;display:none"></div>
+
+      <!-- Botões -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button onclick="closeDayClosedScreen();switchTab('cal')" style="background:var(--surface);border:1px solid var(--border);color:var(--ink);border-radius:12px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">
+          📅 Ver histórico
+        </button>
+        <button onclick="closeDayClosedScreen()" style="background:var(--green);border:none;color:#fff;border-radius:12px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">
+          ✅ Ver metas de amanhã
+        </button>
+      </div>
+
+      <div style="height:32px"></div>
+    </div>
+  </div>
+
+<script src="app.js"></script>
+</body>
+</html>
