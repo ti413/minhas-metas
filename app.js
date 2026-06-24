@@ -1455,7 +1455,9 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   }
 
   function isPremium() {
-    if (isOwner()) return true;   // dono = premium forever
+    if (isOwner()) return true;
+    // Fonte de verdade: Supabase profiles.premium (lido ao fazer login)
+    if (window._userProfile && window._userProfile.premium === true) return true;
     initPremium();
     if (state.premium.ativo) return true;
     return getDiasRestantesTrial() > 0;
@@ -1548,53 +1550,76 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   }
 
   async function iniciarCheckout() {
+    if (!currentUser) {
+      showToast('Faça login antes de assinar');
+      openAuthModal();
+      return;
+    }
     const paymentLink = 'https://buy.stripe.com/test_5kQ4gA5Ln7H60VF40M3wQ00';
-    window.location.href = paymentLink;
+    const email = encodeURIComponent(currentUser.email || '');
+    const userId = encodeURIComponent(currentUser.id || '');
+    // Passa email para pré-preencher no Stripe e client_reference_id para o webhook identificar o usuário
+    window.location.href = `${paymentLink}?prefilled_email=${email}&client_reference_id=${userId}`;
   }
 
-  // Verificar retorno do Stripe
+  // Verificar retorno do Stripe — requer auth + confirmação via Supabase
   function checkStripeReturn() {
     const params = new URLSearchParams(window.location.search);
     const isPremiumSuccess = params.get('premium') === 'success';
-    
+
     if (isPremiumSuccess) {
-      initPremium();
-      state.premium.ativo = true;
-      // Salvar diretamente no localStorage para garantir
-      try {
-        localStorage.setItem('minhas-metas-state', JSON.stringify(state));
-      } catch(e) {}
-      showToast('🎉 Premium ativado! Bem-vindo!');
-      setTimeout(lancarConfete, 500);
       window.history.replaceState({}, '', window.location.pathname);
-      renderTrialBanner();
-      renderHoje();
+      if (!currentUser) {
+        // Usuário não está logado ainda — guarda pendência e pede login
+        sessionStorage.setItem('premium-pending', '1');
+        showToast('⚠️ Faça login para ativar seu Premium');
+        setTimeout(() => openAuthModal(), 800);
+        return;
+      }
+      verificarPremiumPosPagamento();
     } else if (params.get('premium') === 'cancel') {
       showToast('Assinatura cancelada.');
       window.history.replaceState({}, '', window.location.pathname);
     }
   }
 
-  // Verificar premium no localStorage ao iniciar
-  function checkPremiumStatus() {
-    initPremium();
-    // Se já tem premium ativo, esconder banner
-    if (state.premium && state.premium.ativo) {
-      renderTrialBanner();
-    }
-  }
-
-  // Ativar premium manualmente (para testes)
-  function ativarPremiumManual(codigo) {
-    if (codigo === 'METAS2026') {
+  // Confirma premium lendo Supabase (única fonte de verdade)
+  async function verificarPremiumPosPagamento() {
+    showToast('⏳ Verificando pagamento...');
+    await loadUserProfile();
+    if (window._userProfile && window._userProfile.premium) {
       initPremium();
       state.premium.ativo = true;
       saveState();
-      showToast('🎉 Premium ativado!');
-      setTimeout(lancarConfete, 300);
+      showToast('🎉 Premium ativado! Bem-vindo!');
+      setTimeout(lancarConfete, 500);
       renderTrialBanner();
+      renderHoje();
+      return;
     }
+    // Webhook pode ter pequeno delay — tenta mais uma vez em 5s
+    showToast('⏳ Processando... aguarde alguns segundos.');
+    setTimeout(async () => {
+      await loadUserProfile();
+      if (window._userProfile && window._userProfile.premium) {
+        initPremium();
+        state.premium.ativo = true;
+        saveState();
+        showToast('🎉 Premium ativado! Bem-vindo!');
+        setTimeout(lancarConfete, 500);
+        renderTrialBanner();
+        renderHoje();
+      } else {
+        showToast('⚠️ Pagamento em processamento. Tente novamente em instantes.');
+      }
+    }, 5000);
   }
+
+  function checkPremiumStatus() {
+    initPremium();
+    if (state.premium && state.premium.ativo) renderTrialBanner();
+  }
+
 
   // ── FINANÇAS ──
   const CAT_FIXAS = [
@@ -2197,12 +2222,17 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     if (!currentUser) return;
     try {
       const { data } = await sb.from('profiles')
-        .select('nome, avatar_url, xp, nivel')
+        .select('nome, avatar_url, xp, nivel, premium, premium_since')
         .eq('id', currentUser.id)
         .maybeSingle();
       if (data) {
         window._userProfile = data;
         if (data.nome) window._userNome = data.nome;
+        // Sincroniza flag de premium com o estado local
+        if (data.premium && state.premium && !state.premium.ativo) {
+          state.premium.ativo = true;
+          saveState();
+        }
       }
     } catch(e) { console.warn('loadUserProfile:', e); }
   }
@@ -2549,6 +2579,13 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     setTimeout(registrarPush, 5000);
     setTimeout(mostrarNudgeNotificacao, 12000);
     setTimeout(verificarRelatorioSemanal, 8000);
+    // Usuário voltou do Stripe mas não estava logado ainda
+    if (sessionStorage.getItem('premium-pending')) {
+      sessionStorage.removeItem('premium-pending');
+      setTimeout(() => verificarPremiumPosPagamento(), 1500);
+    }
+    // Checa retorno do Stripe se ainda não foi processado
+    checkStripeReturn();
   }
 
   function onUserLoggedOut() {
@@ -2941,7 +2978,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
         if (!existentes.includes(txt)) state.metas.push({ text: txt, done: false });
       });
       saveState();
-      renderMetas();
+      renderHoje();
     }
     var el = document.getElementById('onboarding');
     el.style.opacity = '0';
