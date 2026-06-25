@@ -26,9 +26,9 @@ Criar um agente de operações de deploy para o app Minhas Metas, composto por:
 PRÉ-DEPLOY — Backups
 ├── Local:    copia index.html + styles.css + app.js
 │             para .backups/YYYY-MM-DD_HH-MM/
-└── Servidor: via paramiko, renomeia /var/www/metas/
-              para /var/www/metas_backup_YYYY-MM-DD_HH-MM/
-              (mantém os arquivos antigos no servidor)
+└── Servidor: via paramiko, copia index.html + styles.css + app.js
+              de /var/www/metas/ para /var/www/metas_backups/YYYY-MM-DD_HH-MM/
+              (site continua no ar durante o backup)
 
 DEPLOY
 1. git status  — lista arquivos modificados
