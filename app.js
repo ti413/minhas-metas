@@ -3882,7 +3882,6 @@ PERSONALIZAÇÃO OBRIGATÓRIA: Use sempre os dados reais — metas, streak, humo
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id' });
 
-      console.log('✅ Push subscription registrada');
     } catch(e) {
       console.warn('Push registration error:', e);
     }
@@ -3980,7 +3979,5 @@ PERSONALIZAÇÃO OBRIGATÓRIA: Use sempre os dados reais — metas, streak, humo
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
-        .then(reg => console.log('SW registrado:', reg.scope))
-        .catch(err => console.log('SW erro:', err));
     });
   }
