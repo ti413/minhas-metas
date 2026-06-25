@@ -277,6 +277,16 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   const CAT_CORES = ['#3d9e72','#e67e22','#9b59b6','#3498db','#e74c3c','#16a085','#f39c12','#8e44ad'];
   let catSelecionada = null;
 
+  // ── AGENDA STATE ──
+  let agendaTarefas = [];
+  let agendaYear  = new Date().getFullYear();
+  let agendaMonth = new Date().getMonth();
+  let agendaSelectedDate = todayStr();
+  let agendaCatFilter = null;
+  let agendaEditingId = null;
+  let agendaPrioSelecionada = 'media';
+  let agendaCatSelecionada = 'geral';
+
   function initCategorias() {
     if (!state.categorias) state.categorias = [];
   }
@@ -789,13 +799,13 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
   // ── TABS ──
   function switchTab(tab) {
-    ['hoje', 'cal', 'treino', 'extras', 'dash', 'coach'].forEach(t => {
+    ['hoje', 'agenda', 'treino', 'extras', 'dash', 'coach'].forEach(t => {
       const screen = document.getElementById('screen-' + t);
       const btn = document.getElementById('btn-' + t);
       if (screen) screen.classList.toggle('active', t === tab);
       if (btn) btn.classList.toggle('active', t === tab);
     });
-    if (tab === 'cal') renderCal();
+    if (tab === 'agenda') renderAgenda();
     if (tab === 'dash') renderDash();
     if (tab === 'extras') renderExtras();
     if (tab === 'treino') renderTreinoScreen();
@@ -3850,6 +3860,384 @@ PERSONALIZAÇÃO OBRIGATÓRIA: Use sempre os dados reais — metas, streak, humo
     });
   }
 
+  // ── AGENDA ──────────────────────────────────────────────────────────
+
+  const AGENDA_CATS = [
+    { id: 'geral',      label: 'Geral',      emoji: '📌' },
+    { id: 'trabalho',   label: 'Trabalho',   emoji: '💼' },
+    { id: 'saude',      label: 'Saúde',      emoji: '❤️' },
+    { id: 'pessoal',    label: 'Pessoal',    emoji: '🙂' },
+    { id: 'espiritual', label: 'Espiritual', emoji: '✝️' },
+    { id: 'financeiro', label: 'Financeiro', emoji: '💰' },
+  ];
+
+  const AGENDA_PRIO_COR = { baixa: '#3d9e72', media: '#f5a623', alta: '#e74c3c' };
+
+  function initAgenda() {
+    agendaYear  = new Date().getFullYear();
+    agendaMonth = new Date().getMonth();
+    agendaSelectedDate = todayStr();
+  }
+
+  function switchAgendaSubtab(tab) {
+    ['agenda','historico'].forEach(t => {
+      const panel = document.getElementById('apanel-' + t);
+      const btn   = document.getElementById('asubtab-' + t);
+      if (panel) panel.classList.toggle('active', t === tab);
+      if (btn)   btn.classList.toggle('active',   t === tab);
+    });
+    if (tab === 'historico') renderCal();
+    if (tab === 'agenda')    renderAgendaCalGrid();
+  }
+
+  async function renderAgenda() {
+    renderAgendaCalGrid();
+    renderAgendaFilterChips();
+    await loadAgendaTarefas();
+    renderAgendaDayTasks();
+  }
+
+  function renderAgendaCalGrid() {
+    const yr = agendaYear, mo = agendaMonth;
+    const lbl = document.getElementById('agenda-month-label');
+    if (lbl) lbl.textContent = MONTHS_PT[mo] + ' ' + yr;
+
+    const grid = document.getElementById('agenda-cal-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    DAYS_PT.forEach(d => {
+      const e = document.createElement('div');
+      e.className = 'cal-day-label';
+      e.textContent = d[0];
+      grid.appendChild(e);
+    });
+
+    const first = new Date(yr, mo, 1).getDay();
+    for (let i = 0; i < first; i++) {
+      const e = document.createElement('div');
+      e.className = 'cal-day empty';
+      grid.appendChild(e);
+    }
+
+    const days = new Date(yr, mo + 1, 0).getDate();
+    const todayKey = todayStr();
+
+    for (let d = 1; d <= days; d++) {
+      const key = `${yr}-${pad2(mo + 1)}-${pad2(d)}`;
+      const hasTasks = agendaTarefas.some(t => t.data_hora_inicio.startsWith(key));
+      const div = document.createElement('div');
+
+      let cls = 'cal-day';
+      if (key === todayKey)           cls += ' today';
+      if (key === agendaSelectedDate) cls += ' agenda-selected';
+      if (!hasTasks)                  cls += ' none';
+      else                            cls += ' agenda-has-tasks';
+
+      div.className = cls;
+      div.textContent = d;
+      div.onclick = () => {
+        agendaSelectedDate = key;
+        renderAgendaCalGrid();
+        renderAgendaDayHeader();
+        renderAgendaDayTasks();
+      };
+      grid.appendChild(div);
+    }
+
+    renderAgendaDayHeader();
+  }
+
+  function renderAgendaDayHeader() {
+    const el = document.getElementById('agenda-day-title');
+    if (!el) return;
+    const [yr, mo, dy] = agendaSelectedDate.split('-').map(Number);
+    const d = new Date(yr, mo - 1, dy);
+    const weekday = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'][d.getDay()];
+    el.textContent = `${weekday}, ${dy} de ${MONTHS_PT[mo - 1]}`;
+  }
+
+  async function loadAgendaTarefas() {
+    if (!currentUser) { agendaTarefas = []; return; }
+    const startOf = `${agendaYear}-${pad2(agendaMonth + 1)}-01T00:00:00Z`;
+    const lastDay = new Date(agendaYear, agendaMonth + 1, 0).getDate();
+    const endOf   = `${agendaYear}-${pad2(agendaMonth + 1)}-${pad2(lastDay)}T23:59:59Z`;
+    try {
+      const { data, error } = await sb
+        .from('agenda_tarefas')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .gte('data_hora_inicio', startOf)
+        .lte('data_hora_inicio', endOf)
+        .order('data_hora_inicio', { ascending: true });
+      if (!error && data) agendaTarefas = data;
+    } catch(e) { console.warn('loadAgendaTarefas:', e); }
+  }
+
+  function renderAgendaDayTasks() {
+    const list = document.getElementById('agenda-tasks-list');
+    if (!list) return;
+
+    let tasks = agendaTarefas.filter(t => t.data_hora_inicio.startsWith(agendaSelectedDate));
+    if (agendaCatFilter) tasks = tasks.filter(t => t.categoria === agendaCatFilter);
+
+    list.innerHTML = '';
+
+    if (!currentUser) {
+      list.innerHTML = '<div class="agenda-empty">Entre na conta para ver suas tarefas.</div>';
+      return;
+    }
+    if (!tasks.length) {
+      list.innerHTML = '<div class="agenda-empty">Nenhuma tarefa para este dia.</div>';
+      return;
+    }
+
+    tasks.forEach(task => {
+      const card = document.createElement('div');
+      card.className = 'agenda-task-card' + (task.concluida ? ' concluida' : '');
+      card.style.borderLeftColor = AGENDA_PRIO_COR[task.prioridade] || 'var(--border)';
+
+      const cat = AGENDA_CATS.find(c => c.id === task.categoria) || AGENDA_CATS[0];
+      const inicio = new Date(task.data_hora_inicio);
+      const horaStr = `${pad2(inicio.getHours())}:${pad2(inicio.getMinutes())}`;
+
+      card.innerHTML = `
+        <div class="agenda-task-left">
+          <button class="agenda-check-btn${task.concluida ? ' checked' : ''}"
+            onclick="toggleAgendaTask('${task.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="agenda-task-body" onclick="editAgendaTask('${task.id}')">
+          <div class="agenda-task-titulo">${escapeHtml(task.titulo)}</div>
+          ${task.descricao ? `<div class="agenda-task-desc">${escapeHtml(task.descricao)}</div>` : ''}
+          <div class="agenda-task-meta">
+            <span class="agenda-task-hora">⏰ ${horaStr}</span>
+            <span class="agenda-cat-badge">${cat.emoji} ${cat.label}</span>
+          </div>
+        </div>
+        <button class="agenda-task-del" onclick="deleteAgendaTask('${task.id}')">🗑️</button>
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  function renderAgendaFilterChips() {
+    const container = document.getElementById('agenda-filter-chips');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const allBtn = document.createElement('button');
+    allBtn.className = 'cat-chip' + (!agendaCatFilter ? ' active' : '');
+    allBtn.textContent = 'Todas';
+    allBtn.onclick = () => { agendaCatFilter = null; renderAgendaFilterChips(); renderAgendaDayTasks(); };
+    container.appendChild(allBtn);
+
+    AGENDA_CATS.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = 'cat-chip' + (agendaCatFilter === cat.id ? ' active' : '');
+      btn.innerHTML = `${cat.emoji} ${cat.label}`;
+      btn.onclick = () => {
+        agendaCatFilter = agendaCatFilter === cat.id ? null : cat.id;
+        renderAgendaFilterChips();
+        renderAgendaDayTasks();
+      };
+      container.appendChild(btn);
+    });
+  }
+
+  function agendaChangeMonth(dir) {
+    agendaMonth += dir;
+    if (agendaMonth > 11) { agendaMonth = 0; agendaYear++; }
+    if (agendaMonth < 0)  { agendaMonth = 11; agendaYear--; }
+    loadAgendaTarefas().then(() => {
+      renderAgendaCalGrid();
+      renderAgendaDayTasks();
+    });
+  }
+
+  function openAddAgendaTaskModal() {
+    agendaEditingId = null;
+    document.getElementById('agenda-modal-title').textContent = 'Nova tarefa';
+    document.getElementById('agenda-modal-save-btn').textContent = 'Adicionar';
+    document.getElementById('agenda-titulo').value = '';
+    document.getElementById('agenda-descricao').value = '';
+    document.getElementById('agenda-inicio').value = agendaSelectedDate + 'T09:00';
+    document.getElementById('agenda-fim').value = '';
+    agendaCatSelecionada  = 'geral';
+    agendaPrioSelecionada = 'media';
+    renderAgendaModalChips();
+    renderAgendaModalPrio();
+    const modal = document.getElementById('agenda-task-modal');
+    modal.style.display = 'flex';
+    modal.style.pointerEvents = 'auto';
+    setTimeout(() => document.getElementById('agenda-titulo').focus(), 100);
+  }
+
+  function editAgendaTask(id) {
+    const task = agendaTarefas.find(t => t.id === id);
+    if (!task) return;
+    agendaEditingId = id;
+    document.getElementById('agenda-modal-title').textContent = 'Editar tarefa';
+    document.getElementById('agenda-modal-save-btn').textContent = 'Salvar';
+    document.getElementById('agenda-titulo').value    = task.titulo;
+    document.getElementById('agenda-descricao').value = task.descricao || '';
+    const toLocal = iso => iso ? iso.slice(0, 16) : '';
+    document.getElementById('agenda-inicio').value = toLocal(task.data_hora_inicio);
+    document.getElementById('agenda-fim').value    = toLocal(task.data_hora_fim);
+    agendaCatSelecionada  = task.categoria  || 'geral';
+    agendaPrioSelecionada = task.prioridade || 'media';
+    renderAgendaModalChips();
+    renderAgendaModalPrio();
+    const modal = document.getElementById('agenda-task-modal');
+    modal.style.display = 'flex';
+    modal.style.pointerEvents = 'auto';
+  }
+
+  function closeAgendaTaskModal(e) {
+    if (!e || e.target.id === 'agenda-task-modal') {
+      const modal = document.getElementById('agenda-task-modal');
+      modal.style.display = 'none';
+      modal.style.pointerEvents = 'none';
+    }
+  }
+
+  function renderAgendaModalChips() {
+    const container = document.getElementById('agenda-cat-chips');
+    if (!container) return;
+    container.innerHTML = '';
+    AGENDA_CATS.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = 'cat-chip' + (agendaCatSelecionada === cat.id ? ' active' : '');
+      btn.innerHTML = `${cat.emoji} ${cat.label}`;
+      btn.onclick = () => { agendaCatSelecionada = cat.id; renderAgendaModalChips(); };
+      container.appendChild(btn);
+    });
+  }
+
+  function setAgendaPrio(p) {
+    agendaPrioSelecionada = p;
+    renderAgendaModalPrio();
+  }
+
+  function renderAgendaModalPrio() {
+    ['baixa','media','alta'].forEach(p => {
+      const btn = document.getElementById('aprio-' + p);
+      if (btn) btn.classList.toggle('active', p === agendaPrioSelecionada);
+    });
+  }
+
+  async function saveAgendaTask() {
+    const titulo = document.getElementById('agenda-titulo').value.trim();
+    const inicio = document.getElementById('agenda-inicio').value;
+    if (!titulo) { showToast('Informe o título da tarefa'); return; }
+    if (!inicio) { showToast('Informe a data e hora de início'); return; }
+    if (!currentUser) { showToast('Entre na conta para salvar'); return; }
+
+    const fimVal = document.getElementById('agenda-fim').value;
+    const payload = {
+      user_id:          currentUser.id,
+      titulo,
+      descricao:        document.getElementById('agenda-descricao').value.trim() || null,
+      data_hora_inicio: new Date(inicio).toISOString(),
+      data_hora_fim:    fimVal ? new Date(fimVal).toISOString() : null,
+      categoria:        agendaCatSelecionada,
+      prioridade:       agendaPrioSelecionada,
+      concluida:        false,
+    };
+
+    try {
+      if (agendaEditingId) {
+        const { error } = await sb
+          .from('agenda_tarefas')
+          .update({ ...payload, updated_at: new Date().toISOString() })
+          .eq('id', agendaEditingId)
+          .eq('user_id', currentUser.id);
+        if (error) throw error;
+        showToast('✅ Tarefa atualizada!');
+      } else {
+        const { data, error } = await sb
+          .from('agenda_tarefas')
+          .insert(payload)
+          .select()
+          .single();
+        if (error) throw error;
+        showToast('✅ Tarefa criada!');
+        enviarPushAgenda(data);
+      }
+      closeAgendaTaskModal();
+      await loadAgendaTarefas();
+      renderAgendaCalGrid();
+      renderAgendaDayTasks();
+      renderAgendaFilterChips();
+    } catch(e) {
+      console.warn('saveAgendaTask:', e);
+      showToast('Erro ao salvar tarefa');
+    }
+  }
+
+  async function toggleAgendaTask(id) {
+    if (!currentUser) return;
+    const task = agendaTarefas.find(t => t.id === id);
+    if (!task) return;
+    const newVal = !task.concluida;
+    try {
+      const { error } = await sb
+        .from('agenda_tarefas')
+        .update({ concluida: newVal, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('user_id', currentUser.id);
+      if (!error) {
+        task.concluida = newVal;
+        renderAgendaDayTasks();
+      }
+    } catch(e) { console.warn('toggleAgendaTask:', e); }
+  }
+
+  async function deleteAgendaTask(id) {
+    if (!currentUser) return;
+    if (!confirm('Excluir esta tarefa?')) return;
+    try {
+      const { error } = await sb
+        .from('agenda_tarefas')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', currentUser.id);
+      if (!error) {
+        agendaTarefas = agendaTarefas.filter(t => t.id !== id);
+        renderAgendaCalGrid();
+        renderAgendaDayTasks();
+        showToast('Tarefa excluída');
+      }
+    } catch(e) { console.warn('deleteAgendaTask:', e); }
+  }
+
+  async function enviarPushAgenda(task) {
+    if (!currentUser) return;
+    try {
+      const inicio = new Date(task.data_hora_inicio);
+      const horaStr = `${pad2(inicio.getHours())}:${pad2(inicio.getMinutes())}`;
+      const sessao = await sb.auth.getSession();
+      const token = sessao.data.session?.access_token || '';
+      await fetch('https://tpcawmrblanpkgoqisgw.supabase.co/functions/v1/send-push', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+          title: '📅 Nova tarefa agendada',
+          body:  `${task.titulo} — ${horaStr}`,
+        }),
+      });
+    } catch(e) { console.warn('enviarPushAgenda:', e); }
+  }
+
+  // ── END AGENDA ──────────────────────────────────────────────────────
+
   // ── PUSH NOTIFICATIONS ──
   const VAPID_PUBLIC_KEY = 'BMnNzbaVlZJoCK3yU0oBisBbtJaau_SJhWze_UVVPQC_-BjX-hr0woPLfRAku0SB7UsLJgNqByuN2OrStwd3m38';
 
@@ -3903,6 +4291,7 @@ PERSONALIZAÇÃO OBRIGATÓRIA: Use sempre os dados reais — metas, streak, humo
   initCategorias();
   initFinancas();
   initMetasLongas();
+  initAgenda();
   initDiario();
   checkOnboarding();
   document.getElementById('today-label').textContent = dateLbl();
