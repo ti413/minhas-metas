@@ -386,6 +386,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     const recurrent = document.getElementById('recurrent-toggle').classList.contains('on');
     const diasSemana = recurrent && diasSemanaSelecionado < 7 ? diasSemanaSelecionado : null;
     state.metas.push({ id: Date.now(), text: val, done: false, recurrent, diasSemana, categoria: catSelecionada || null });
+    trackEvent('habito_criado', { recorrente: recurrent, diasSemana: diasSemana });
     closeAddModal();
     saveState();
     renderHoje();
@@ -443,6 +444,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     if (p === 100) setTimeout(lancarConfete, 300);
     state.humor = null;
     setTimeout(checkConquistas, 600);
+    trackEvent('dia_fechado', { pct: p, streak: streakAtual });
 
     // Streak Freeze: a cada 7 dias completados, ganha 1 (máx. 2)
     if (p > 0) {
@@ -1571,6 +1573,21 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     return owners.includes(e1) || owners.includes(e2);
   }
 
+  // ── TELEMETRIA ──
+  // Grava eventos de produto na tabela Supabase `events` (falha em silêncio se
+  // a tabela ainda não existir). Base do funil onboarding → paywall → pagamento.
+  function trackEvent(evento, props) {
+    try {
+      if (!window.supabase || !sb) return;
+      sb.from('events').insert({
+        user_id: currentUser ? currentUser.id : null,
+        evento: evento,
+        props: props || {},
+        client_ts: new Date().toISOString()
+      }).then(() => {}, () => {});
+    } catch(e) {}
+  }
+
   function isPremium() {
     if (isOwner()) return true;
     // Fonte de verdade: Supabase profiles.premium (lido ao fazer login)
@@ -1632,8 +1649,12 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
       if (streak > 0) sub = (nome ? nome + ', você' : 'Você') + ' tem <strong>' + streak + ' dias seguidos</strong> de streak e <strong>' + totalDias + ' dias de histórico</strong>. Não perca isso — assine para continuar.';
       else sub = 'Seus 3 dias gratuitos acabaram. Assine para continuar usando todas as funcionalidades.';
     } else {
-      sub = 'Por <strong>R$&nbsp;9,90/mês</strong> você desbloqueia tudo — incluindo o coach de IA personalizado.';
+      sub = 'Seu coach de IA pessoal, insights diários e sequência protegida — por menos de R$&nbsp;0,22 por dia no plano anual.';
     }
+
+    const precoMensal = window._precoMensal || 'R$ 14,90';
+    const precoAnual = window._precoAnual || 'R$ 79';
+    const precoAnualMes = window._precoAnualMes || 'R$ 6,60';
 
     const overlay = document.createElement('div');
     overlay.className = 'paywall-overlay';
@@ -1645,20 +1666,30 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
         <div class="paywall-sub">${sub}</div>
         <div class="paywall-features">
           <div class="paywall-feat"><div class="paywall-feat-icon">🤖</div><div><strong>Coach de IA ilimitado</strong><br><span style="font-size:12px;color:var(--muted)">✝️ Jesus (Cristão) · 🏛️ Marco (Estoicismo) · insights diários personalizados</span></div></div>
+          <div class="paywall-feat"><div class="paywall-feat-icon">🧊</div>Streak Freeze — um dia perdido não zera sua sequência</div>
           <div class="paywall-feat"><div class="paywall-feat-icon">🔖</div>Reflexões salvas ilimitadas</div>
-          <div class="paywall-feat"><div class="paywall-feat-icon">📊</div>Histórico completo + relatórios avançados</div>
+          <div class="paywall-feat"><div class="paywall-feat-icon">📊</div>Histórico completo + relatórios semanais</div>
           <div class="paywall-feat"><div class="paywall-feat-icon">☁️</div>Sync em todos os dispositivos</div>
-          <div class="paywall-feat"><div class="paywall-feat-icon">🎯</div>Metas, treinos, livros e finanças ilimitados</div>
         </div>
-        <div class="paywall-price">R$ 9,90 <span>/ mês</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin:14px 0">
+          <button onclick="iniciarCheckout('anual')" style="position:relative;border:2px solid var(--green);background:var(--green-pale);border-radius:14px;padding:14px;cursor:pointer;font-family:inherit;text-align:left">
+            <span style="position:absolute;top:-9px;right:12px;background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px">MAIS POPULAR · -56%</span>
+            <span style="display:block;font-size:14px;font-weight:700;color:var(--ink)">Anual — ${precoAnual}/ano</span>
+            <span style="display:block;font-size:12px;color:var(--muted)">equivale a ${precoAnualMes}/mês</span>
+          </button>
+          <button onclick="iniciarCheckout('mensal')" style="border:1px solid var(--border);background:var(--surface);border-radius:14px;padding:12px 14px;cursor:pointer;font-family:inherit;text-align:left">
+            <span style="display:block;font-size:14px;font-weight:600;color:var(--ink)">Mensal — ${precoMensal}/mês</span>
+            <span style="display:block;font-size:12px;color:var(--muted)">cancele quando quiser</span>
+          </button>
+        </div>
         <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Cancele quando quiser · Sem fidelidade</div>
-        <button class="paywall-cta" onclick="iniciarCheckout()">🚀 Assinar agora</button>
         <button class="paywall-cancel" onclick="fecharPaywall()">
           ${expirou ? 'Continuar com versão limitada' : 'Agora não'}
         </button>
       </div>`;
     overlay.onclick = (e) => { if (e.target === overlay) fecharPaywall(); };
     document.body.appendChild(overlay);
+    trackEvent('paywall_view', { origem: origem || null });
   }
 
   function fecharPaywall() {
@@ -1666,13 +1697,17 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     if (el) el.remove();
   }
 
-  async function iniciarCheckout() {
+  async function iniciarCheckout(plano) {
     if (!currentUser) {
       showToast('Faça login antes de assinar');
       openAuthModal();
       return;
     }
-    const paymentLink = 'https://buy.stripe.com/9B63cv4Wza2T7vM0OgfEk00';
+    // Payment Links configuráveis via admin_config (stripeLinkMensal / stripeLinkAnual)
+    const linkMensal = window._stripeLinkMensal || 'https://buy.stripe.com/9B63cv4Wza2T7vM0OgfEk00';
+    const linkAnual = window._stripeLinkAnual || linkMensal;
+    const paymentLink = plano === 'anual' ? linkAnual : linkMensal;
+    trackEvent('checkout_start', { plano: plano || 'mensal' });
     const email = encodeURIComponent(currentUser.email || '');
     const userId = encodeURIComponent(currentUser.id || '');
     // Passa email para pré-preencher no Stripe e client_reference_id para o webhook identificar o usuário
@@ -1709,6 +1744,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
       state.premium.ativo = true;
       saveState();
       showToast('🎉 Premium ativado! Bem-vindo!');
+      trackEvent('premium_converted', {});
       setTimeout(lancarConfete, 500);
       renderTrialBanner();
       renderHoje();
@@ -1723,6 +1759,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
         state.premium.ativo = true;
         saveState();
         showToast('🎉 Premium ativado! Bem-vindo!');
+      trackEvent('premium_converted', {});
         setTimeout(lancarConfete, 500);
         renderTrialBanner();
         renderHoje();
@@ -2606,6 +2643,11 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
       if (c.precoExibido) window._precoExibido = c.precoExibido;
       if (c.paywallTexto) window._paywallTexto = c.paywallTexto;
       if (c.stripePriceId) window._stripePriceId = c.stripePriceId;
+      if (c.stripeLinkMensal) window._stripeLinkMensal = c.stripeLinkMensal;
+      if (c.stripeLinkAnual) window._stripeLinkAnual = c.stripeLinkAnual;
+      if (c.precoMensal) window._precoMensal = c.precoMensal;
+      if (c.precoAnual) window._precoAnual = c.precoAnual;
+      if (c.precoAnualMes) window._precoAnualMes = c.precoAnualMes;
       if (c.features) {
         if (c.features.humor === false) { const el = document.querySelector('.humor-section'); if (el) el.style.display = 'none'; }
         if (c.features.planta === false) { const el = document.querySelector('.plant-wrap'); if (el) el.style.display = 'none'; }
@@ -2684,11 +2726,25 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
     renderTrialBanner();
     loadFromCloud();
-    setTimeout(gerarInsightDiario, 4000);
-    setTimeout(registrarPush, 5000);
-    setTimeout(analisarHabitosLogin, 6000);
-    setTimeout(mostrarNudgeNotificacao, 12000);
-    setTimeout(verificarRelatorioSemanal, 8000);
+    trackEvent('login', {});
+
+    // Fila sequencial pós-login (substitui os setTimeout mágicos)
+    const filaPosLogin = [gerarInsightDiario, registrarPush, analisarHabitosLogin, verificarRelatorioSemanal, mostrarNudgeNotificacao];
+    let filaIdx = 0;
+    const rodarFila = () => {
+      if (filaIdx >= filaPosLogin.length) return;
+      const fn = filaPosLogin[filaIdx++];
+      try { fn(); } catch(e) { console.warn('pós-login:', e); }
+      setTimeout(rodarFila, 2500);
+    };
+    setTimeout(rodarFila, 3000);
+
+    // Paywall Day-0: primeiro login após onboarding, com plano anual em destaque
+    if (sessionStorage.getItem('ob-paywall-pending') && !isOwner() && !(window._userProfile && window._userProfile.premium)) {
+      sessionStorage.removeItem('ob-paywall-pending');
+      setTimeout(() => abrirPaywall('onboarding'), 1800);
+    }
+
     // Usuário voltou do Stripe mas não estava logado ainda
     if (sessionStorage.getItem('premium-pending')) {
       sessionStorage.removeItem('premium-pending');
@@ -2914,9 +2970,10 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   // ── ONBOARDING ──
   // ── ONBOARDING ──
   const OB_SLIDES = [
-    { type:'info', illustration:'🌿', tag:'Bem-vindo', title:'Seus hábitos.\nSeu ritmo.', desc:'Acompanhe suas metas diárias e conte com um coach de IA que conhece sua rotina de verdade.' },
-    { type:'metas', illustration:'🎯', tag:'Passo 1 de 2', title:'Suas metas de hoje', placeholders:['Ex: Meditar 10 minutos','Ex: Beber 2L de água','Ex: Estudar 30 minutos'] },
-    { type:'coach', illustration:'🤖', tag:'Passo 2 de 2', title:'Escolha seu coach' },
+    { type:'info', illustration:'🌿', tag:'Bem-vindo', title:'Você sabe o que\nprecisa fazer.', desc:'O difícil é continuar fazendo. O Minhas Metas une metas diárias, sequência protegida e um coach de IA que conhece sua rotina — para você não desistir no dia 4.' },
+    { type:'metas', illustration:'🎯', tag:'Passo 1 de 3', title:'Suas metas de hoje', placeholders:['Ex: Meditar 10 minutos','Ex: Beber 2L de água','Ex: Estudar 30 minutos'] },
+    { type:'coach', illustration:'🤖', tag:'Passo 2 de 3', title:'Escolha seu coach' },
+    { type:'preview', illustration:'💬', tag:'Passo 3 de 3', title:'Seu coach já tem algo\npra te dizer' },
     { type:'ready', illustration:'🚀', tag:'Tudo certo!', title:'Você está pronto!' },
   ];
 
@@ -3031,6 +3088,29 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
       });
       content.appendChild(cards);
 
+    } else if (slide.type === 'preview') {
+      // Primeira interação com o coach — valor sentido antes do paywall
+      var meta1 = (obMetas.filter(function(m) { return m.trim(); })[0]) || 'cuidar melhor de você';
+      var msgs = {
+        jesus: 'Que alegria caminhar com você! Vi que você quer <strong>' + escapeHtml(meta1.toLowerCase()) + '</strong>. Não se preocupe com a perfeição — comece pequeno hoje, e eu estarei com você todos os dias.<br><br><em>"Tudo posso naquele que me fortalece."</em> (Fp 4:13)',
+        estoico: 'Você decidiu <strong>' + escapeHtml(meta1.toLowerCase()) + '</strong>. Excelente escolha. Lembre-se: não controlamos os resultados, apenas as nossas ações de hoje. Faça o que está ao seu alcance — e apenas hoje. A disciplina é a sua liberdade.'
+      };
+      var avatares = { jesus: '✝️', estoico: '🏛️' };
+      var nomes = { jesus: 'Jesus', estoico: 'Coach Marco' };
+      var mentor = obCoach || 'jesus';
+
+      var bubble = document.createElement('div');
+      bubble.style.cssText = 'margin-top:18px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;max-width:320px';
+      bubble.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="font-size:22px">' + avatares[mentor] + '</span><strong style="font-size:14px;color:var(--ink)">' + nomes[mentor] + '</strong></div>' +
+        '<div style="font-size:14px;color:var(--ink);line-height:1.6">' + (msgs[mentor] || msgs.jesus) + '</div>';
+      content.appendChild(bubble);
+
+      var hint = document.createElement('p');
+      hint.className = 'ob-desc';
+      hint.style.marginTop = '14px';
+      hint.textContent = 'É assim que seu coach vai te acompanhar — todos os dias, no seu ritmo.';
+      content.appendChild(hint);
+
     } else if (slide.type === 'ready') {
       var filledMetas = obMetas.filter(function(m) { return m; });
       var coachNome = obCoach === 'estoico' ? 'Coach Marco (Estoicismo)' : obCoach === 'jesus' ? 'Jesus' : 'seu coach';
@@ -3070,6 +3150,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     }
     if (currentSlide < OB_SLIDES.length - 1) {
       currentSlide++;
+      trackEvent('onboarding_step', { step: currentSlide, tipo: OB_SLIDES[currentSlide].type });
       renderSlide();
     } else {
       finishOnboarding();
@@ -3078,6 +3159,9 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
   function finishOnboarding() {
     localStorage.setItem('minhas-metas-onboarded', '1');
+    trackEvent('onboarding_done', { coach: obCoach || null, metas: obMetas.filter(function(m) { return m.trim(); }).length });
+    // Paywall Day-0: mostra após o primeiro login (89% das conversões acontecem na 1ª sessão)
+    try { sessionStorage.setItem('ob-paywall-pending', '1'); } catch(e) {}
     // Salva coach preferido
     if (obCoach) localStorage.setItem('coach_pref', obCoach);
     // Adiciona as metas ao estado
@@ -3109,6 +3193,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
       el.style.display = 'flex';
       el.style.pointerEvents = 'all';
       currentSlide = 0;
+      trackEvent('onboarding_start', {});
       renderSlide();
     }
   }
@@ -3543,6 +3628,7 @@ PERSONALIZAÇÃO OBRIGATÓRIA: Use sempre os dados reais — metas, streak, humo
     coachMessages.push({role:'user', content:userMsg});
     saveCoachHistory();
     addCoachMessage('user', userMsg, true);
+    trackEvent('coach_msg', { mentor: mentorAtivo });
     document.getElementById('coach-quick-btns-wrap')?.classList.add('hidden');
     showCoachTyping();
     coachIsTyping = true;
