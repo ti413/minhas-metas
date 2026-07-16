@@ -2366,7 +2366,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     if (!currentUser) return;
     try {
       const { data } = await sb.from('profiles')
-        .select('nome, avatar_url, xp, nivel, premium, premium_since')
+        .select('nome, avatar_url, xp, nivel, premium, premium_since, mentor')
         .eq('id', currentUser.id)
         .maybeSingle();
       if (data) {
@@ -2727,6 +2727,12 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     renderTrialBanner();
     loadFromCloud();
     trackEvent('login', {});
+
+    // Sincroniza preferência de mentor (localStorage → profiles) para os agentes proativos
+    const prefMentor = localStorage.getItem('coach_pref');
+    if (prefMentor && (!window._userProfile || !window._userProfile.mentor)) {
+      saveUserProfile({ mentor: prefMentor === 'huberman' ? 'estoico' : prefMentor });
+    }
 
     // Fila sequencial pós-login (substitui os setTimeout mágicos)
     const filaPosLogin = [gerarInsightDiario, registrarPush, analisarHabitosLogin, verificarRelatorioSemanal, mostrarNudgeNotificacao];
@@ -3735,6 +3741,9 @@ PERSONALIZAÇÃO OBRIGATÓRIA: Use sempre os dados reais — metas, streak, humo
 
   function setMentor(mentor) {
     mentorAtivo = mentor;
+    localStorage.setItem('coach_pref', mentor);
+    // Persiste no perfil — os agentes proativos (push 9h/20h) leem profiles.mentor
+    if (currentUser) saveUserProfile({ mentor });
     document.querySelectorAll('.coach-mentor-card').forEach(cd => cd.classList.toggle('active', cd.dataset.mentor === mentor));
     showActiveBar(mentor);
     renderCoachQuickBtns();

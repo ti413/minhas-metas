@@ -16,5 +16,6 @@ alter table public.events enable row level security;
 
 -- Qualquer um (anon incluído, para eventos pré-login do onboarding) pode inserir;
 -- ninguém lê pelo client (leitura só via service_role / MCP).
+drop policy if exists "events_insert_all" on public.events;
 create policy "events_insert_all" on public.events
   for insert to anon, authenticated with check (true);
