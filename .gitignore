@@ -11,3 +11,5 @@ desktop.ini
 # Deploy scripts (contêm credenciais)
 *.py
 monitor_config.py
+__pycache__/
+_legacy/

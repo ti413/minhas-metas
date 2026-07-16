@@ -477,11 +477,6 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
       <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
         <span style="font-size:18px">${m.done ? '✅' : '⬜'}</span>
         <span style="font-size:14px;color:${m.done ? 'var(--ink)' : 'var(--muted)'}">${m.text}</span>
-      </div>`).join('').replace(/\]/g, ')');
-    lista.innerHTML = metas.map(m => `
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
-        <span style="font-size:18px">${m.done ? '✅' : '⬜'}</span>
-        <span style="font-size:14px;color:${m.done ? 'var(--ink)' : 'var(--muted)'}">${m.text}</span>
       </div>`).join('');
 
     // Humor
@@ -813,6 +808,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
       // Auto-seleciona coach salvo no onboarding se nenhum estiver ativo
       if (!mentorAtivo) {
         var pref = localStorage.getItem('coach_pref');
+        if (pref === 'huberman') { pref = 'estoico'; localStorage.setItem('coach_pref', 'estoico'); }
         if (pref) setTimeout(function() { setMentor(pref); }, 50);
       }
       setTimeout(gerarInsightDiario, 100);
@@ -839,58 +835,6 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     return p;
   }
 
-  function renderWeekBar() {
-    const bar = document.getElementById('week-bar');
-    if (!bar) return;
-    const todayKey = todayStr();
-    const LABELS = ['D','S','T','Q','Q','S','S'];
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek);
-    const todayHist = (state.history || {})[todayKey];
-    const dayClosed = todayHist && todayHist.pct > 0;
-
-    bar.innerHTML = '';
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + i);
-      const yr = d.getFullYear();
-      const mo = String(d.getMonth() + 1).padStart(2, '0');
-      const dy = String(d.getDate()).padStart(2, '0');
-      const key = yr + '-' + mo + '-' + dy;
-      const isToday = key === todayKey;
-      const isPast = key < todayKey;
-      const hist = (state.history || {})[key];
-
-      let circleClass = 'week-day-circle';
-      let icon = '';
-
-      if (isToday) {
-        if (dayClosed) {
-          circleClass += ' done';
-          icon = hist.pct === 100 ? '✅' : '✔';
-        } else {
-          const p = pct();
-          circleClass += ' today';
-          icon = p > 0 ? '🎯' : '·';
-        }
-      } else if (isPast) {
-        if (hist && hist.pct >= 100) { circleClass += ' done'; icon = '✅'; }
-        else if (hist && hist.pct > 0) { circleClass += ' done'; icon = '✔'; }
-        else { circleClass += ' failed'; icon = ''; }
-      } else {
-        circleClass += ' future';
-        icon = '';
-      }
-
-      const wrap = document.createElement('div');
-      wrap.className = 'week-day';
-      wrap.innerHTML = `
-        <div class="week-day-label">${LABELS[i]}</div>
-        <div class="${circleClass}">${icon}</div>
-      `;
-      bar.appendChild(wrap);
-    }
-  }
 
   function renderPlanta() {
     const hist = state.history || {};
@@ -1949,12 +1893,6 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     return yr + '-' + mo + '-' + dy;
   }
 
-  function initTreinosSplit() {
-    // No longer auto-populate — user builds their own workout
-  }
-
-  function renderDiasSemana(containerId) { /* legacy */ }
-
   function renderTreinoScreen() {
     initTreinos();
 
@@ -2198,10 +2136,6 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     saveState();
     renderTreinoScreen();
   }
-
-  // Legacy compat
-  function salvarExercicio() { addExercicio(); }
-  function checkSerie(exIdx, serieIdx) { toggleSerie(exIdx, serieIdx); }
 
   // ── SISTEMA DE XP E NÍVEIS ──
   const NIVEIS = [
@@ -3029,19 +2963,6 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     { id: 'meta10',          icon: '🎯', name: 'Focado',             desc: 'Adicione 10 metas diferentes',       check: (h, s) => { const names = new Set(); Object.values(h).forEach(d => (d.metas||[]).forEach(m => names.add(m.text))); return names.size >= 10; } },
     { id: 'tres_perfeitos',  icon: '🏆', name: 'Hat-trick',          desc: '3 dias perfeitos (100%)',            check: (h, s) => Object.values(h).filter(d => d.pct === 100).length >= 3 },
   ];
-
-  function calcStreakLegacy(hist) {
-    let streak = 0;
-    const d = new Date();
-    while (true) {
-      const k = d.toISOString().split('T')[0];
-      const dy = d.getDate(); const mo = String(d.getMonth()+1).padStart(2,'0'); const yr = d.getFullYear();
-      const key = yr + '-' + mo + '-' + String(dy).padStart(2,'0');
-      if (hist[key] && hist[key].pct > 0) { streak++; d.setDate(d.getDate()-1); }
-      else break;
-    }
-    return streak;
-  }
 
   function checkConquistas() {
     const hist = state.history;
