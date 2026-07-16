@@ -55,6 +55,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
         }
         s.calMonth = new Date().getMonth();
         s.calYear = new Date().getFullYear();
+        aplicarStreakFreeze(s);
         return s;
       }
     } catch(e) {}
@@ -197,7 +198,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
         </span>
         <button class="check-btn${m.done ? ' checked' : ''}" onclick="toggleMeta(${m.id})" aria-label="Marcar como feita"></button>
         <span class="meta-text">${escapeHtml(m.text)}${m.categoria ? `<span class="meta-cat-tag" style="background:${getCategoriaCor(m.categoria)}22;color:${getCategoriaCor(m.categoria)}">${escapeHtml(m.categoria)}</span>` : ''}</span>
-        ${m.recurrent ? '<span class="meta-tag recurrent">diária</span>' : ''}
+        ${m.recurrent ? (m.diasSemana ? `<span class="meta-tag recurrent" title="Meta flexível: ${m.diasSemana}x por semana">${contarDiasSemanaConcluidos(m.text)}/${m.diasSemana} na semana</span>` : '<span class="meta-tag recurrent">diária</span>') : ''}
         <div class="meta-actions">
           <button class="meta-action" onclick="postponeMeta(${m.id})" title="Adiar para amanhã" aria-label="Adiar para amanhã">
             <svg class="icon" viewBox="0 0 24 24" style="width:15px;height:15px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="12" y1="15" x2="12" y2="19"/><line x1="10" y1="17" x2="14" y2="17"/></svg>
@@ -327,13 +328,51 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     return cat ? cat.cor : 'var(--muted)';
   }
 
+  let diasSemanaSelecionado = 7;
+
   function openAddModal() {
     document.getElementById('add-modal').style.display = 'flex';
     document.getElementById('meta-input').value = '';
     catSelecionada = null;
     renderCategoriaChips();
     document.getElementById('recurrent-toggle').classList.remove('on');
+    setDiasSemana(7);
+    toggleDiasSemanaRow();
     setTimeout(() => document.getElementById('meta-input').focus(), 100);
+  }
+
+  function toggleDiasSemanaRow() {
+    const on = document.getElementById('recurrent-toggle').classList.contains('on');
+    const row = document.getElementById('dias-semana-row');
+    if (row) row.style.display = on ? 'block' : 'none';
+  }
+
+  function setDiasSemana(n) {
+    diasSemanaSelecionado = n;
+    [3,4,5,6,7].forEach(v => {
+      const b = document.getElementById('dsb-' + v);
+      if (b) b.classList.toggle('active', v === n);
+    });
+  }
+
+  // Progresso semanal de uma meta flexível (dom–sáb da semana atual)
+  function contarDiasSemanaConcluidos(metaText) {
+    const hist = state.history || {};
+    const now = new Date();
+    const inicioSemana = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+    let count = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(inicioSemana.getFullYear(), inicioSemana.getMonth(), inicioSemana.getDate() + i);
+      const k = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+      if (k === todayStr()) {
+        const m = state.metas.find(x => x.text === metaText);
+        if (m && m.done) count++;
+        else if (hist[k] && (hist[k].metas || []).some(x => x.text === metaText && x.done)) count++;
+      } else if (hist[k] && (hist[k].metas || []).some(x => x.text === metaText && x.done)) {
+        count++;
+      }
+    }
+    return count;
   }
 
   function closeAddModal(e) {
@@ -345,7 +384,8 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     const val = document.getElementById('meta-input').value.trim();
     if (!val) return;
     const recurrent = document.getElementById('recurrent-toggle').classList.contains('on');
-    state.metas.push({ id: Date.now(), text: val, done: false, recurrent, categoria: catSelecionada || null });
+    const diasSemana = recurrent && diasSemanaSelecionado < 7 ? diasSemanaSelecionado : null;
+    state.metas.push({ id: Date.now(), text: val, done: false, recurrent, diasSemana, categoria: catSelecionada || null });
     closeAddModal();
     saveState();
     renderHoje();
@@ -404,6 +444,16 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     state.humor = null;
     setTimeout(checkConquistas, 600);
 
+    // Streak Freeze: a cada 7 dias completados, ganha 1 (máx. 2)
+    if (p > 0) {
+      state.diasCompletados = (state.diasCompletados || 0) + 1;
+      state.freezes = state.freezes || 0;
+      if (state.diasCompletados % 7 === 0 && state.freezes < MAX_FREEZES) {
+        state.freezes++;
+        setTimeout(() => showToast('🧊 Você ganhou um Streak Freeze! Um dia perdido não zera mais sua sequência.'), 1200);
+      }
+    }
+
     // Mantém só recorrentes, zeradas
     state.metas = state.metas
       .filter(m => m.recurrent)
@@ -431,9 +481,40 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
       d.setDate(d.getDate() - i);
       const k = d.toISOString().split('T')[0];
       if (hist[k] && hist[k].pct > 0) streak++;
+      else if (hist[k] && hist[k].frozen) continue; // dia congelado: streak sobrevive, não soma
       else break;
     }
     return streak;
+  }
+
+  // ── STREAK FREEZE ──
+  // Ganha 1 freeze a cada 7 dias completados (máx. 2). Dia perdido consome
+  // freeze em vez de zerar o streak — a plantinha murcha mas não morre.
+  const MAX_FREEZES = 2;
+
+  function aplicarStreakFreeze(s) {
+    try {
+      if (!s || !s.history) return;
+      s.freezes = s.freezes || 0;
+      if (s.freezes <= 0) return;
+      const today = new Date();
+      const missing = [];
+      let ancorado = false;
+      for (let i = 1; i <= 30; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const k = d.toISOString().split('T')[0];
+        const h = s.history[k];
+        if (h && (h.pct > 0 || h.frozen)) { ancorado = missing.length > 0; break; }
+        if (h) return; // dia fechado com 0% de verdade — quebra real, freeze não salva
+        missing.push(k);
+        if (missing.length > s.freezes) return; // gap maior que os freezes disponíveis
+      }
+      if (!ancorado) return;
+      missing.forEach(k => { s.history[k] = { pct: 0, metas: [], humor: null, frozen: true }; });
+      s.freezes -= missing.length;
+      s.freezeAvisoPendente = true;
+    } catch(e) {}
   }
 
   function showDayClosedScreen(p, metas, humor, streak) {
@@ -676,21 +757,24 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     const transMes = (state.transacoes || []).filter(t => t.data.startsWith(mesAtualStr));
     const saldoMes = transMes.reduce((a,t) => a + (t.tipo === 'entrada' ? t.valor : -t.valor), 0);
 
-    container.innerHTML = `
+    const cards = [];
+    if (modulosAtivos.treino) cards.push(`
       <div class="overview-card">
         <div class="overview-icon">💪</div>
         <div class="overview-info">
           <div class="overview-val">${treinosSemana}</div>
           <div class="overview-label">treinos esta semana</div>
         </div>
-      </div>
+      </div>`);
+    if (modulosAtivos.extras) cards.push(`
       <div class="overview-card">
         <div class="overview-icon">📚</div>
         <div class="overview-info">
           <div class="overview-val">${livrosLendo}</div>
           <div class="overview-label">livros lendo${livrosConcluidos ? ' · ' + livrosConcluidos + ' lidos' : ''}</div>
         </div>
-      </div>
+      </div>`);
+    cards.push(`
       <div class="overview-card">
         <div class="overview-icon">💭</div>
         <div class="overview-info">
@@ -704,14 +788,16 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
           <div class="overview-val">${metasLongasAtivas}</div>
           <div class="overview-label">metas em andamento</div>
         </div>
-      </div>
+      </div>`);
+    if (modulosAtivos.extras) cards.push(`
       <div class="overview-card" style="grid-column:span 2">
         <div class="overview-icon">💰</div>
         <div class="overview-info">
           <div class="overview-val" style="color:${saldoMes >= 0 ? 'var(--green)' : '#e74c3c'}">${fmtMoeda(saldoMes)}</div>
           <div class="overview-label">saldo do mês</div>
         </div>
-      </div>`;
+      </div>`);
+    container.innerHTML = cards.join('');
   }
 
   function renderDash() {
@@ -792,8 +878,34 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
       : 'Registre mais dias para ver';
   }
 
+  // ── MÓDULOS OPCIONAIS (feature flags via admin_config.modulos) ──
+  let modulosAtivos = { agenda: false, treino: false, extras: false };
+
+  const MODULO_NAV = {
+    agenda: { label: 'Agenda', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' },
+    treino: { label: 'Treino', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5h11"/><path d="M6.5 17.5h11"/><path d="M3 9.5h3v5H3z"/><path d="M18 9.5h3v5h-3z"/></svg>' },
+    extras: { label: 'Extras', svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>' }
+  };
+
+  function renderModuleNav() {
+    const bar = document.querySelector('.bottom-bar');
+    if (!bar) return;
+    bar.querySelectorAll('.bar-btn-modulo').forEach(b => b.remove());
+    const coachBtn = document.getElementById('btn-coach');
+    Object.keys(MODULO_NAV).forEach(mod => {
+      if (!modulosAtivos[mod]) return;
+      const btn = document.createElement('button');
+      btn.className = 'bar-btn bar-btn-modulo';
+      btn.id = 'btn-' + mod;
+      btn.onclick = () => switchTab(mod);
+      btn.innerHTML = MODULO_NAV[mod].svg + '<span class="tab-label">' + MODULO_NAV[mod].label + '</span>';
+      bar.insertBefore(btn, coachBtn);
+    });
+  }
+
   // ── TABS ──
   function switchTab(tab) {
+    if ((tab === 'agenda' || tab === 'treino' || tab === 'extras') && !modulosAtivos[tab]) tab = 'hoje';
     ['hoje', 'agenda', 'treino', 'extras', 'dash', 'coach'].forEach(t => {
       const screen = document.getElementById('screen-' + t);
       const btn = document.getElementById('btn-' + t);
@@ -801,7 +913,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
       if (btn) btn.classList.toggle('active', t === tab);
     });
     if (tab === 'agenda') renderAgenda();
-    if (tab === 'dash') renderDash();
+    if (tab === 'dash') { renderDash(); renderCal(); renderMetasLongas(); }
     if (tab === 'extras') renderExtras();
     if (tab === 'treino') renderTreinoScreen();
     if (tab === 'coach') {
@@ -842,6 +954,20 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     const emojiEl = document.getElementById('plant-emoji');
     const label = document.getElementById('plant-streak');
 
+    // Ontem foi salvo por um freeze? Plantinha murcha mas viva.
+    const ontemF = new Date(); ontemF.setDate(ontemF.getDate() - 1);
+    const ontemFKey = ontemF.toISOString().split('T')[0];
+    if (hist[ontemFKey] && hist[ontemFKey].frozen) {
+      if (emojiEl) emojiEl.innerHTML = PLANTA_MURCHA_SVG;
+      if (label) label.innerHTML = '🧊 Um freeze salvou sua sequência de <strong>' + streak + ' dia' + (streak > 1 ? 's' : '') + '</strong> — complete hoje para revivê-la!';
+      if (state.freezeAvisoPendente) {
+        state.freezeAvisoPendente = false;
+        saveState();
+        setTimeout(() => showToast('🧊 Seu Streak Freeze foi usado — sua sequência está protegida!'), 800);
+      }
+      return;
+    }
+
     // Detecta streak quebrado: tinha histórico, ontem tinha progresso, hoje streak=0
     const totalDias = Object.keys(hist).length;
     const ontem = new Date(); ontem.setDate(ontem.getDate() - 1);
@@ -858,12 +984,33 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     const planta = getPlanta(streak);
     if (emojiEl) emojiEl.innerHTML = planta.svg;
     if (label) {
+      const freezeBadge = (state.freezes > 0) ? ' <span title="Streak Freezes disponíveis">🧊×' + state.freezes + '</span>' : '';
       if (streak > 0) {
-        label.innerHTML = planta.label + ' — <strong>' + streak + ' dia' + (streak > 1 ? 's' : '') + '</strong>';
+        label.innerHTML = planta.label + ' — <strong>' + streak + ' dia' + (streak > 1 ? 's' : '') + '</strong>' + freezeBadge;
       } else {
-        label.textContent = planta.label;
+        label.innerHTML = escapeHtml(planta.label) + freezeBadge;
       }
     }
+  }
+
+  // Recuperação pós-falha: streak quebrou de verdade → mensagem acolhedora (1x/dia)
+  function checkStreakQuebrado() {
+    try {
+      const hist = state.history || {};
+      if (calcStreakFromHist(hist) > 0) return;
+      // streak que terminou há 1-2 dias (havia dia completado anteontem ou antes)
+      let tinhaStreak = false;
+      for (let i = 2; i <= 4; i++) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const k = d.toISOString().split('T')[0];
+        if (hist[k] && hist[k].pct > 0) { tinhaStreak = true; break; }
+      }
+      if (!tinhaStreak) return;
+      const flagKey = 'streak-recuperacao-' + todayStr();
+      if (localStorage.getItem(flagKey)) return;
+      localStorage.setItem(flagKey, '1');
+      setTimeout(() => showToast('🌱 Um dia perdido não apaga seu progresso. Recomece hoje — seu coach está te esperando.'), 2500);
+    } catch(e) {}
   }
 
   // ── LIVROS ──
@@ -1117,23 +1264,34 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   const DIAS_CURTOS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
   function switchExtrasTab(tab) {
-    ['livros','metas-longas','diario','financas'].forEach(t => {
+    ['livros','financas'].forEach(t => {
       const btn = document.getElementById('etab-' + t);
       const panel = document.getElementById('epanel-' + t);
       if (btn) btn.classList.toggle('active', t === tab);
       if (panel) panel.classList.toggle('active', t === tab);
     });
     if (tab === 'livros') renderLivros();
-    if (tab === 'metas-longas') renderMetasLongas();
-    if (tab === 'diario') renderDiario();
     if (tab === 'financas') renderFinancas();
   }
 
   function renderExtras() {
-    if (document.getElementById('etab-livros').classList.contains('active')) renderLivros();
-    else if (document.getElementById('etab-metas-longas').classList.contains('active')) renderMetasLongas();
-    else if (document.getElementById('etab-diario').classList.contains('active')) renderDiario();
-    else if (document.getElementById('etab-financas').classList.contains('active')) renderFinancas();
+    if (document.getElementById('etab-financas').classList.contains('active')) renderFinancas();
+    else renderLivros();
+  }
+
+  // ── DIÁRIO (modal, acessível pela aba Coach) ──
+  function openDiarioModal() {
+    const m = document.getElementById('diario-modal');
+    if (!m) return;
+    m.style.display = 'flex';
+    m.style.pointerEvents = 'auto';
+    renderDiario();
+  }
+
+  function closeDiarioModal(e) {
+    if (e && e.target !== e.currentTarget) return;
+    const m = document.getElementById('diario-modal');
+    if (m) { m.style.display = 'none'; m.style.pointerEvents = 'none'; }
   }
 
   // ── METAS LONGAS ──
@@ -1301,6 +1459,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     if (!texto) return;
     // Escolhe mentor (preferência ou padrão)
     const mentor = mentorAtivo || localStorage.getItem('coach_pref') || 'jesus';
+    closeDiarioModal();
     switchTab('coach');
     setTimeout(() => {
       if (!mentorAtivo) setMentor(mentor);
@@ -2448,14 +2607,16 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
       if (c.paywallTexto) window._paywallTexto = c.paywallTexto;
       if (c.stripePriceId) window._stripePriceId = c.stripePriceId;
       if (c.features) {
-        if (c.features.treinos === false) { const el = document.querySelector('[onclick*="treino"]'); if (el) el.style.display = 'none'; }
         if (c.features.humor === false) { const el = document.querySelector('.humor-section'); if (el) el.style.display = 'none'; }
         if (c.features.planta === false) { const el = document.querySelector('.plant-wrap'); if (el) el.style.display = 'none'; }
         if (c.features.livros === false) { const el = document.getElementById('etab-livros'); if (el) el.style.display = 'none'; }
         if (c.features.financas === false) { const el = document.getElementById('etab-financas'); if (el) el.style.display = 'none'; }
-        if (c.features.diario === false) { const el = document.getElementById('etab-diario'); if (el) el.style.display = 'none'; }
-        if (c.features.metaslong === false) { const el = document.getElementById('etab-metas-longas'); if (el) el.style.display = 'none'; }
       }
+      // Módulos opcionais (default: desligados) — {"modulos":{"agenda":true,"treino":true,"extras":true}}
+      if (c.modulos) {
+        Object.keys(modulosAtivos).forEach(m => { if (c.modulos[m] === true) modulosAtivos[m] = true; });
+      }
+      renderModuleNav();
     } catch(e) { console.warn('adminConfig load error:', e); }
   }
 
@@ -2735,6 +2896,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
           state.lastDay = todayStr();
           state.humor = null;
         }
+        aplicarStreakFreeze(state);
         saveState();
         renderHoje();
         renderTrialBanner();
@@ -2962,6 +3124,8 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     { id: 'humor_otimo',     icon: '😄', name: 'No alto astral',     desc: 'Registre humor ótimo 5 vezes',       check: (h, s) => Object.values(h).filter(d => d.humor === 'otimo').length >= 5 },
     { id: 'meta10',          icon: '🎯', name: 'Focado',             desc: 'Adicione 10 metas diferentes',       check: (h, s) => { const names = new Set(); Object.values(h).forEach(d => (d.metas||[]).forEach(m => names.add(m.text))); return names.size >= 10; } },
     { id: 'tres_perfeitos',  icon: '🏆', name: 'Hat-trick',          desc: '3 dias perfeitos (100%)',            check: (h, s) => Object.values(h).filter(d => d.pct === 100).length >= 3 },
+    { id: 'recomeco',        icon: '💚', name: 'Recomeço',           desc: 'Voltou depois de um dia perdido',    check: (h, s) => { const ks = Object.keys(h).filter(k => h[k].pct > 0).sort(); for (let i = 1; i < ks.length; i++) { if ((new Date(ks[i]) - new Date(ks[i-1])) / 86400000 >= 2) return true; } return false; } },
+    { id: 'freeze_usado',    icon: '🧊', name: 'Protegido',          desc: 'Um Streak Freeze salvou sua sequência', check: (h, s) => Object.values(h).some(d => d.frozen) },
   ];
 
   function checkConquistas() {
@@ -3800,17 +3964,6 @@ PERSONALIZAÇÃO OBRIGATÓRIA: Use sempre os dados reais — metas, streak, humo
     agendaSelectedDate = todayStr();
   }
 
-  function switchAgendaSubtab(tab) {
-    ['agenda','historico'].forEach(t => {
-      const panel = document.getElementById('apanel-' + t);
-      const btn   = document.getElementById('asubtab-' + t);
-      if (panel) panel.classList.toggle('active', t === tab);
-      if (btn)   btn.classList.toggle('active',   t === tab);
-    });
-    if (tab === 'historico') renderCal();
-    if (tab === 'agenda')    renderAgendaCalGrid();
-  }
-
   async function renderAgenda() {
     renderAgendaCalGrid();
     renderAgendaFilterChips();
@@ -4217,6 +4370,7 @@ PERSONALIZAÇÃO OBRIGATÓRIA: Use sempre os dados reais — metas, streak, humo
   checkOnboarding();
   document.getElementById('today-label').textContent = dateLbl();
   renderHoje();
+  checkStreakQuebrado();
 
   // ── NOTIFICAÇÕES ──
   function mostrarNudgeNotificacao() {

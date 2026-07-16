@@ -183,13 +183,8 @@
     <div id="login-nudge" style="display:none"></div>
   </div>
 
-  <!-- AGENDA -->
+  <!-- AGENDA (módulo opcional — ativado via admin_config.modulos.agenda) -->
   <div class="screen" id="screen-agenda">
-    <div class="agenda-subtabs">
-      <button class="agenda-subtab active" id="asubtab-agenda" onclick="switchAgendaSubtab('agenda')">📅 Agenda</button>
-      <button class="agenda-subtab" id="asubtab-historico" onclick="switchAgendaSubtab('historico')">🗓️ Histórico</button>
-    </div>
-
     <!-- PAINEL: Agenda de tarefas -->
     <div class="agenda-panel active" id="apanel-agenda">
       <div class="cal-header">
@@ -209,27 +204,6 @@
       <div class="agenda-tasks-list" id="agenda-tasks-list"></div>
     </div>
 
-    <!-- PAINEL: Histórico de hábitos (calendário existente) -->
-    <div class="agenda-panel" id="apanel-historico">
-      <div class="cal-header">
-        <button class="cal-nav" onclick="changeMonth(-1)">&#8249;</button>
-        <div class="cal-month" id="cal-month-label"></div>
-        <button class="cal-nav" onclick="changeMonth(1)">&#8250;</button>
-      </div>
-      <div class="cal-grid" id="cal-grid"></div>
-      <div class="cal-legend">
-        <div class="legend-item">
-          <div class="legend-dot" style="background:var(--surface);border:1px solid var(--border)"></div> Sem dados
-        </div>
-        <div class="legend-item"><div class="legend-dot" style="background:rgba(61,158,114,.18)"></div> 1–49%</div>
-        <div class="legend-item"><div class="legend-dot" style="background:rgba(61,158,114,.45)"></div> 50–99%</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#3d9e72"></div> 100%</div>
-      </div>
-      <div class="cal-detail" id="cal-detail">
-        <div class="cal-detail-title" id="cal-detail-title"></div>
-        <div id="cal-detail-items"></div>
-      </div>
-    </div>
   </div>
 
   <!-- DASHBOARD -->
@@ -291,6 +265,40 @@
       <div class="dash-section">
         <div class="dash-title">📅 Últimos 7 dias</div>
         <div class="bar-chart" id="bar-chart"></div>
+      </div>
+
+      <!-- HISTÓRICO (heatmap mensal) -->
+      <div class="dash-section">
+        <div class="dash-title">🗓️ Histórico</div>
+        <div class="cal-header">
+          <button class="cal-nav" onclick="changeMonth(-1)">&#8249;</button>
+          <div class="cal-month" id="cal-month-label"></div>
+          <button class="cal-nav" onclick="changeMonth(1)">&#8250;</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div class="cal-legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:var(--surface);border:1px solid var(--border)"></div> Sem dados
+          </div>
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(61,158,114,.18)"></div> 1–49%</div>
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(61,158,114,.45)"></div> 50–99%</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#3d9e72"></div> 100%</div>
+        </div>
+        <div class="cal-detail" id="cal-detail">
+          <div class="cal-detail-title" id="cal-detail-title"></div>
+          <div id="cal-detail-items"></div>
+        </div>
+      </div>
+
+      <!-- OBJETIVOS DE LONGO PRAZO -->
+      <div class="dash-section">
+        <div class="dash-title" style="display:flex;align-items:center;justify-content:space-between">🎯 Objetivos
+          <button class="add-btn" onclick="openAddMetaLongaModal()">
+            <svg style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Novo
+          </button>
+        </div>
+        <div id="metas-longas-list" style="display:flex;flex-direction:column;gap:10px"></div>
       </div>
 
       <!-- CORRELAÇÃO HUMOR -->
@@ -357,8 +365,6 @@
     <!-- Sub-tabs -->
     <div class="extras-tabs">
       <button class="extras-tab active" id="etab-livros" onclick="switchExtrasTab('livros')"><span class="tab-icon">📚</span>Livros</button>
-      <button class="extras-tab" id="etab-metas-longas" onclick="switchExtrasTab('metas-longas')"><span class="tab-icon">🎯</span>Objetivos</button>
-      <button class="extras-tab" id="etab-diario" onclick="switchExtrasTab('diario')"><span class="tab-icon">💭</span>Diário</button>
       <button class="extras-tab" id="etab-financas" onclick="switchExtrasTab('financas')"><span class="tab-icon">💰</span>Finanças</button>
     </div>
 
@@ -373,35 +379,6 @@
       </div>
       <div class="livros-stats" id="livros-stats"></div>
       <div class="livros-list" id="livros-list"></div>
-    </div>
-
-    <!-- Painel Metas Longas -->
-    <div class="extras-panel" id="epanel-metas-longas">
-      <div class="livros-header">
-        <div class="livros-title">🎯 Objetivos</div>
-        <button class="livros-add" onclick="openAddMetaLongaModal()">
-          <svg style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nova
-        </button>
-      </div>
-      <div id="metas-longas-list" style="padding:0 20px;display:flex;flex-direction:column;gap:10px"></div>
-    </div>
-
-    <!-- Painel Diário -->
-    <div class="extras-panel" id="epanel-diario">
-      <div class="livros-header">
-        <div class="livros-title">💭 Diário</div>
-        <div style="font-size:12px;color:var(--muted)" id="diario-date-label"></div>
-      </div>
-      <div style="padding:0 20px;flex:1;display:flex;flex-direction:column;gap:10px">
-        <textarea id="diario-texto" placeholder="O que você aprendeu hoje? Como foi seu dia? O que você é grato?" style="flex:1;min-height:180px;width:100%;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);padding:14px;font-size:14px;font-family:inherit;color:var(--ink);resize:none;outline:none;line-height:1.6;-webkit-text-fill-color:var(--ink)"></textarea>
-        <div style="display:flex;gap:8px">
-          <button onclick="salvarDiario()" style="flex:1;padding:12px;border-radius:var(--radius);border:none;background:var(--green);color:white;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit">Salvar entrada</button>
-          <button id="diario-coach-btn" onclick="enviarDiarioAoCoach()" style="display:none;padding:12px 14px;border-radius:var(--radius);border:1.5px solid var(--green);background:var(--green-pale);color:var(--green);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">🤖 Pedir reflexão</button>
-        </div>
-        <div style="font-size:13px;font-weight:500;color:var(--muted);margin-top:4px">Entradas anteriores</div>
-        <div id="diario-historico" style="display:flex;flex-direction:column;gap:8px"></div>
-      </div>
     </div>
 
     <!-- Painel Finanças -->
@@ -433,6 +410,7 @@
     <div class="coach-header">
       <div class="coach-title">🤖 Meu Coach</div>
       <div style="display:flex;align-items:center;gap:8px">
+        <button onclick="openDiarioModal()" style="background:none;border:1px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;transition:all .15s" title="Escrever no diário" id="diario-btn">💭 Diário</button>
         <button onclick="openReflexoesModal()" style="background:none;border:1px solid var(--border);border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;transition:all .15s" title="Ver reflexões salvas" id="reflexoes-btn">🔖 Reflexões</button>
         <div class="coach-status"><div class="coach-status-dot"></div>IA ativa</div>
       </div>
@@ -449,10 +427,10 @@
         <div class="coach-mentor-card-name">Jesus</div>
         <div class="coach-mentor-card-spec">Palavra de Deus, fé, propósito e paz</div>
       </div>
-      <div class="coach-mentor-card" data-mentor="huberman" onclick="setMentor('huberman')">
-        <div class="coach-mentor-card-avatar" style="background:linear-gradient(135deg,#e8f5ef,#c8ecd9)">🧠</div>
-        <div class="coach-mentor-card-name">Eslen Delanogare</div>
-        <div class="coach-mentor-card-spec">Neurociência, hábitos e autocontrole</div>
+      <div class="coach-mentor-card" data-mentor="estoico" onclick="setMentor('estoico')">
+        <div class="coach-mentor-card-avatar" style="background:linear-gradient(135deg,#f0ece4,#d4c9b0)">🏛️</div>
+        <div class="coach-mentor-card-name">Coach Marco</div>
+        <div class="coach-mentor-card-spec">Estoicismo: virtude, controle e disciplina</div>
       </div>
     </div>
     <!-- Barra de mentor ativo (aparece durante conversa) -->
@@ -467,7 +445,7 @@
       <div class="coach-empty" id="coach-empty">
         <div class="coach-empty-icon">✝️</div>
         <div class="coach-empty-title">Escolha seu coach</div>
-        <div class="coach-empty-sub">Selecione Jesus ou Eslen Delanogare para começar</div>
+        <div class="coach-empty-sub">Selecione Jesus ou Coach Marco para começar</div>
       </div>
     </div>
     <div class="coach-quick-btns-wrap hidden" id="coach-quick-btns-wrap">
@@ -488,21 +466,9 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       <span class="tab-label">Hoje</span>
     </button>
-    <button class="bar-btn" id="btn-agenda" onclick="switchTab('agenda')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="8" cy="15" r="1.5" fill="currentColor"/><circle cx="12" cy="15" r="1.5" fill="currentColor"/></svg>
-      <span class="tab-label">Agenda</span>
-    </button>
-    <button class="bar-btn" id="btn-treino" onclick="switchTab('treino')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5h11"/><path d="M6.5 17.5h11"/><path d="M3 9.5h3v5H3z"/><path d="M18 9.5h3v5h-3z"/></svg>
-      <span class="tab-label">Treino</span>
-    </button>
-    <button class="bar-btn" id="btn-extras" onclick="switchTab('extras')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
-      <span class="tab-label">Extras</span>
-    </button>
     <button class="bar-btn" id="btn-dash" onclick="switchTab('dash')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      <span class="tab-label">Dashboard</span>
+      <span class="tab-label">Progresso</span>
     </button>
     <button class="bar-btn" id="btn-coach" onclick="switchTab('coach')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
@@ -510,6 +476,22 @@
     </button>
   </div>
 
+</div>
+
+<!-- DIÁRIO MODAL -->
+<div class="modal-overlay" id="diario-modal" style="display:none" onclick="closeDiarioModal(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:88vh;overflow-y:auto">
+    <div class="modal-title" style="display:flex;align-items:center;justify-content:space-between">💭 Diário
+      <span style="font-size:12px;color:var(--muted);font-weight:400" id="diario-date-label"></span>
+    </div>
+    <textarea id="diario-texto" placeholder="O que você aprendeu hoje? Como foi seu dia? O que você é grato?" style="min-height:160px;width:100%;border:1px solid var(--border);border-radius:var(--radius);background:var(--white);padding:14px;font-size:14px;font-family:inherit;color:var(--ink);resize:none;outline:none;line-height:1.6;-webkit-text-fill-color:var(--ink);box-sizing:border-box;margin-bottom:10px"></textarea>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button onclick="salvarDiario()" style="flex:1;padding:12px;border-radius:var(--radius);border:none;background:var(--green);color:white;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit">Salvar entrada</button>
+      <button id="diario-coach-btn" onclick="enviarDiarioAoCoach()" style="display:none;padding:12px 14px;border-radius:var(--radius);border:1.5px solid var(--green);background:var(--green-pale);color:var(--green);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">🤖 Pedir reflexão</button>
+    </div>
+    <div style="font-size:13px;font-weight:500;color:var(--muted);margin-bottom:8px">Entradas anteriores</div>
+    <div id="diario-historico" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
 </div>
 
 <!-- REFLEXÕES MODAL -->
@@ -533,8 +515,18 @@
       <div id="categoria-chips" style="display:flex;flex-wrap:wrap;gap:6px"></div>
     </div>
     <div class="modal-row">
-      <label>Repetir todo dia (recorrente)</label>
-      <button class="toggle" id="recurrent-toggle" onclick="this.classList.toggle('on')" aria-label="Toggle recorrente"></button>
+      <label>Repetir (recorrente)</label>
+      <button class="toggle" id="recurrent-toggle" onclick="this.classList.toggle('on');toggleDiasSemanaRow()" aria-label="Toggle recorrente"></button>
+    </div>
+    <div id="dias-semana-row" style="display:none;margin:10px 0">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Quantos dias por semana? (flexível — sem culpa por 1 dia de folga)</div>
+      <div style="display:flex;gap:6px" id="dias-semana-btns">
+        <button class="ex-series-btn" onclick="setDiasSemana(3)" id="dsb-3">3</button>
+        <button class="ex-series-btn" onclick="setDiasSemana(4)" id="dsb-4">4</button>
+        <button class="ex-series-btn" onclick="setDiasSemana(5)" id="dsb-5">5</button>
+        <button class="ex-series-btn" onclick="setDiasSemana(6)" id="dsb-6">6</button>
+        <button class="ex-series-btn active" onclick="setDiasSemana(7)" id="dsb-7">Todo dia</button>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="modal-btn cancel" onclick="closeAddModal()">Cancelar</button>
@@ -744,7 +736,7 @@
 
       <!-- Botões -->
       <div style="display:flex;flex-direction:column;gap:10px">
-        <button onclick="closeDayClosedScreen();switchTab('agenda')" style="background:var(--surface);border:1px solid var(--border);color:var(--ink);border-radius:12px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">
+        <button onclick="closeDayClosedScreen();switchTab('dash')" style="background:var(--surface);border:1px solid var(--border);color:var(--ink);border-radius:12px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">
           📅 Ver histórico
         </button>
         <button onclick="closeDayClosedScreen()" style="background:var(--green);border:none;color:#fff;border-radius:12px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">
