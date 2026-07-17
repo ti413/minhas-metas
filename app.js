@@ -3974,6 +3974,7 @@ PERSONALIZAÇÃO OBRIGATÓRIA: Use sempre os dados reais — metas, streak, humo
     }
 
     // 2. Metas problemáticas? (0 conclusões nos últimos 7 dias)
+    // Só analisa se houver base: pelo menos 3 dias fechados na janela.
     const ultimos7Dias = [];
     for (var i = 1; i <= 7; i++) {
       var d = new Date();
@@ -3981,19 +3982,33 @@ PERSONALIZAÇÃO OBRIGATÓRIA: Use sempre os dados reais — metas, streak, humo
       ultimos7Dias.push(d.toISOString().split('T')[0]);
     }
 
-    var indicesProblematicos = new Set();
-    state.metas.forEach(function(meta, idx) {
+    var diasFechados = ultimos7Dias.filter(function(dia) {
+      var h = state.history[dia];
+      return h && h.metas && h.metas.length > 0;
+    }).length;
+    if (diasFechados < 3) return;
+
+    var agora = Date.now();
+    var problematicas = state.metas.filter(function(meta) {
+      // Ignora metas criadas há menos de 7 dias (id = timestamp de criação)
+      if (typeof meta.id === 'number' && meta.id > 1e12 && (agora - meta.id) < 7 * 86400000) return false;
       var totalConclusoes = ultimos7Dias.reduce(function(acc, dia) {
         var hist = state.history[dia];
         if (!hist || !hist.metas) return acc;
         var metaDoDia = hist.metas.find(function(m) { return m.text === meta.text; });
         return acc + (metaDoDia && metaDoDia.done ? 1 : 0);
       }, 0);
-      if (totalConclusoes === 0) indicesProblematicos.add(idx);
+      return totalConclusoes === 0;
     });
 
-    if (indicesProblematicos.size > 0) {
-      marcarMetasProblematicas(indicesProblematicos);
+    // Um único aviso discreto, no máximo 1x por dia
+    if (problematicas.length > 0 && !localStorage.getItem('nudge-problematicas-' + hoje)) {
+      localStorage.setItem('nudge-problematicas-' + hoje, '1');
+      var nome1 = problematicas[0].text.length > 24 ? problematicas[0].text.slice(0, 24) + '…' : problematicas[0].text;
+      var msg = problematicas.length === 1
+        ? '💡 "' + nome1 + '" está sem conclusões há 7 dias — que tal simplificar ou trocar?'
+        : '💡 ' + problematicas.length + ' metas estão sem conclusões há 7 dias — que tal simplificar?';
+      showToast(msg);
     }
   }
 
@@ -4025,19 +4040,6 @@ PERSONALIZAÇÃO OBRIGATÓRIA: Use sempre os dados reais — metas, streak, humo
     nudge.onclick = function() { nudge.remove(); };
     document.body.appendChild(nudge);
     setTimeout(function() { if (nudge.parentNode) nudge.remove(); }, 8000);
-  }
-
-  function marcarMetasProblematicas(indices) {
-    document.querySelectorAll('#metas-list .meta-item').forEach(function(el) {
-      var idx = parseInt(el.dataset.idx, 10);
-      if (indices.has(idx) && !el.querySelector('.hint-problematica')) {
-        var hint = document.createElement('div');
-        hint.className = 'hint-problematica';
-        hint.style.cssText = 'font-size:11px;color:var(--muted);margin-top:4px;padding-left:36px;';
-        hint.textContent = '💡 Sem conclusões em 7 dias — considere simplificar';
-        el.appendChild(hint);
-      }
-    });
   }
 
   // ── AGENDA ──────────────────────────────────────────────────────────
