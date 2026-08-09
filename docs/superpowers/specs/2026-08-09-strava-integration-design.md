@@ -54,6 +54,7 @@ Usuário no app          N8N (backend)                  Strava API           Sup
 - RLS já habilitado em ambas (usuário só lê a própria linha).
 
 ### 3. N8N — Workflow 1: OAuth callback
+- **Workflow criado e publicado:** "Strava - OAuth Callback" (ID `qfuonnXY1pL79nUM`) em `https://n8n.campostecnologia.cloud/workflow/qfuonnXY1pL79nUM`, projeto pessoal "marcus Campos". Ativado em 2026-08-09 (Task 4). Depende das env vars `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` no container N8N (Step 1, configurado separadamente no servidor).
 - Endpoint `GET /webhook/strava-oauth-callback`.
 - Recebe `code` (autorização) e `state` (= `user_id` do Supabase, passado pelo frontend na URL de autorização).
 - Se vier `error=access_denied` (usuário cancelou): redireciona para `metas.campostecnologia.cloud/?strava=cancelado`, sem gravar nada.
