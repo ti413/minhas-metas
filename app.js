@@ -806,6 +806,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     renderOverview();
     renderConquistas();
     renderHumorCorr();
+    renderStravaCard();
     const hist = state.history;
     const todayKey = todayStr();
 
@@ -878,6 +879,23 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     document.getElementById('best-meta-pct').textContent = bestMeta
       ? bestPct + '% de conclusão'
       : 'Registre mais dias para ver';
+  }
+
+  async function renderStravaCard() {
+    const section = document.getElementById('strava-km-section');
+    if (!section || !currentUser) return;
+    try {
+      const { data: conn } = await sb.from('strava_connections').select('user_id').eq('user_id', currentUser.id).maybeSingle();
+      if (!conn) { section.style.display = 'none'; return; }
+      const hoje = todayStr();
+      const { data: atividades } = await sb.from('strava_activities').select('distance').eq('user_id', currentUser.id).eq('activity_date', hoje);
+      const totalMetros = (atividades || []).reduce((soma, a) => soma + (a.distance || 0), 0);
+      const km = (totalMetros / 1000).toFixed(1);
+      document.getElementById('strava-km-num').textContent = km;
+      section.style.display = 'block';
+    } catch (e) {
+      console.warn('renderStravaCard:', e);
+    }
   }
 
   // ── MÓDULOS OPCIONAIS (feature flags via admin_config.modulos) ──
