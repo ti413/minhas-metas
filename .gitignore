@@ -13,3 +13,6 @@ desktop.ini
 monitor_config.py
 __pycache__/
 _legacy/
+
+# Worktrees isolados (superpowers)
+.worktrees/
