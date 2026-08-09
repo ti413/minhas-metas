@@ -1714,6 +1714,19 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     window.location.href = `${paymentLink}?prefilled_email=${email}&client_reference_id=${userId}`;
   }
 
+  function conectarStrava() {
+    if (!currentUser) {
+      showToast('Faça login antes de conectar o Strava');
+      openAuthModal();
+      return;
+    }
+    const redirectUri = encodeURIComponent('https://n8n.campostecnologia.cloud/webhook/strava-oauth-callback');
+    const state = encodeURIComponent(currentUser.id);
+    const url = `https://www.strava.com/oauth/authorize?client_id=270844&redirect_uri=${redirectUri}&response_type=code&approval_prompt=auto&scope=activity:read&state=${state}`;
+    trackEvent('strava_connect_start', {});
+    window.location.href = url;
+  }
+
   // Verificar retorno do Stripe — requer auth + confirmação via Supabase
   function checkStripeReturn() {
     const params = new URLSearchParams(window.location.search);
