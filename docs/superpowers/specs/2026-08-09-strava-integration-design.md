@@ -63,6 +63,9 @@ Usuário no app          N8N (backend)                  Strava API           Sup
 - Redireciona de volta: `metas.campostecnologia.cloud/?strava=conectado`.
 
 ### 4. N8N — Workflow 2: recebimento de atividades (webhook Strava)
+- **Workflow criado e publicado:** "Strava - Webhook Atividades" (ID `DhnUyFUpBM7UmQH8`) em `https://n8n.campostecnologia.cloud/workflow/DhnUyFUpBM7UmQH8`, projeto pessoal "marcus Campos". Ativado em 2026-08-09 (Task 5). Depende das mesmas env vars da Task 4 (`STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) no container N8N.
+- Endpoint público: `https://n8n.campostecnologia.cloud/webhook/strava-webhook` (aceita `GET` e `POST`) — é o `callback_url` a ser usado na Task 6 (assinatura de push).
+- Implementado como **dois nodes `Webhook` separados** ("Strava Verify" GET / "Strava Evento" POST), cada um com um único `httpMethod` fixo, registrados no **mesmo** `path` (`strava-webhook`). Confirmado que n8n registra webhooks pela dupla (método, path), então GET e POST no mesmo path coexistem sem conflito — não foi necessário usar a opção "Multiple HTTP Methods" do node Webhook. Ver relatório da Task 5 para os detalhes da investigação.
 - Assinatura de push única a nível de app (não por usuário) — criada uma vez via `POST https://www.strava.com/api/v3/push_subscriptions` (`callback_url` apontando pro endpoint deste workflow, `verify_token` definido por nós). Setup manual, feito uma vez após o workflow estar no ar.
 - `GET` (verificação do Strava): responde com o `hub.challenge` recebido.
 - `POST` (evento real): payload traz `owner_id` (= `strava_athlete_id`), `object_type`, `aspect_type`, `object_id` (= id da atividade).
