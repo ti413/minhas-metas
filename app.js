@@ -1787,6 +1787,20 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     if (state.premium && state.premium.ativo) renderTrialBanner();
   }
 
+  // Verificar retorno do Strava (state = user_id, setado pelo N8N no redirect)
+  function checkStravaReturn() {
+    const params = new URLSearchParams(window.location.search);
+    const stravaStatus = params.get('strava');
+    if (stravaStatus === 'conectado') {
+      window.history.replaceState({}, '', window.location.pathname);
+      showToast('✅ Strava conectado! Suas atividades vão aparecer no dashboard.');
+      trackEvent('strava_connected', {});
+      if (typeof renderStravaCard === 'function') renderStravaCard();
+    } else if (stravaStatus === 'cancelado') {
+      window.history.replaceState({}, '', window.location.pathname);
+      showToast('Conexão com o Strava cancelada.');
+    }
+  }
 
   // ── FINANÇAS ──
   const CAT_FIXAS = [
@@ -2771,6 +2785,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     }
     // Checa retorno do Stripe se ainda não foi processado
     checkStripeReturn();
+    checkStravaReturn();
   }
 
   function onUserLoggedOut() {
