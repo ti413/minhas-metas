@@ -1747,6 +1747,21 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     window.location.href = url;
   }
 
+  function conectarGoogleFit() {
+    if (!currentUser) {
+      showToast('Faça login antes de conectar o Google Fit');
+      openAuthModal();
+      return;
+    }
+    const redirectUri = encodeURIComponent('https://n8n.campostecnologia.cloud/webhook/google-health-oauth-callback');
+    const state = encodeURIComponent(currentUser.id);
+    const scope = encodeURIComponent('https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly');
+    const clientId = '405789650795-gb49hf9qhoo99fp67v2958h45t1s4hnq.apps.googleusercontent.com';
+    const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&access_type=offline&prompt=consent&scope=${scope}&state=${state}`;
+    trackEvent('google_fit_connect_start', {});
+    window.location.href = url;
+  }
+
   // Verificar retorno do Stripe — requer auth + confirmação via Supabase
   function checkStripeReturn() {
     const params = new URLSearchParams(window.location.search);
