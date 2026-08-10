@@ -807,6 +807,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     renderConquistas();
     renderHumorCorr();
     renderStravaCard();
+    renderGoogleFitCard();
     const hist = state.history;
     const todayKey = todayStr();
 
@@ -897,6 +898,26 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
       section.style.display = 'block';
     } catch (e) {
       console.warn('renderStravaCard:', e);
+    }
+  }
+
+  async function renderGoogleFitCard() {
+    const section = document.getElementById('googlefit-section');
+    if (!section || !currentUser) return;
+    try {
+      const { data: conn, error: connError } = await sb.from('google_health_connections').select('user_id').eq('user_id', currentUser.id).maybeSingle();
+      if (connError) console.warn('renderGoogleFitCard:', connError);
+      if (!conn) { section.style.display = 'none'; return; }
+      const hoje = todayStr();
+      const { data: metrica, error: metricaError } = await sb.from('google_health_daily').select('steps, distance_meters').eq('user_id', currentUser.id).eq('metric_date', hoje).maybeSingle();
+      if (metricaError) console.warn('renderGoogleFitCard:', metricaError);
+      const steps = (metrica && metrica.steps) || 0;
+      const km = ((metrica && metrica.distance_meters || 0) / 1000).toFixed(1);
+      document.getElementById('googlefit-steps-num').textContent = steps.toLocaleString('pt-BR');
+      document.getElementById('googlefit-km-sub').textContent = km + ' km percorridos';
+      section.style.display = 'block';
+    } catch (e) {
+      console.warn('renderGoogleFitCard:', e);
     }
   }
 
@@ -1834,6 +1855,24 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     } else if (stravaStatus === 'cancelado') {
       window.history.replaceState({}, '', window.location.pathname);
       showToast('Conexão com o Strava cancelada.');
+    }
+  }
+
+  // Verificar retorno do Google Fit (state = user_id, setado pelo N8N no redirect)
+  function checkGoogleFitReturn() {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get('googlefit');
+    if (status === 'conectado') {
+      window.history.replaceState({}, '', window.location.pathname);
+      showToast('✅ Google Fit conectado! Seus passos vão aparecer no dashboard.');
+      trackEvent('google_fit_connected', {});
+      if (typeof renderGoogleFitCard === 'function') renderGoogleFitCard();
+    } else if (status === 'cancelado') {
+      window.history.replaceState({}, '', window.location.pathname);
+      showToast('Conexão com o Google Fit cancelada.');
+    } else if (status === 'erro') {
+      window.history.replaceState({}, '', window.location.pathname);
+      showToast('⚠️ Não foi possível conectar o Google Fit. Tente novamente.');
     }
   }
 
@@ -2821,6 +2860,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     // Checa retorno do Stripe se ainda não foi processado
     checkStripeReturn();
     checkStravaReturn();
+    checkGoogleFitReturn();
   }
 
   function onUserLoggedOut() {
