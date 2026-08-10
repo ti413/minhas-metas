@@ -62,15 +62,17 @@ Sem tabela pré-existente (diferente do Strava). Duas tabelas, mesmo padrão de 
 
 Por que uma linha por dia e não por "atividade" como no Strava: a Google Health API entrega totais agregados do dia (`dailyRollUp`), sem granularidade de atividade discreta — não há o que guardar em nível de "atividade individual". Upsert por `on_conflict=user_id,metric_date`.
 
-### 2. N8N — Workflow "Google Health - OAuth Callback"
-Mirror do "Strava - OAuth Callback":
+### 2. N8N — Workflow "Google Health - OAuth Callback" (implementado 2026-08-10)
+- **Workflow ID**: `8Eitipbz1aVmL1ha` — nome `Google Health - OAuth Callback`, publicado (ativo) em `https://n8n.campostecnologia.cloud/webhook/google-health-oauth-callback`.
+- Mirror exato do "Strava - OAuth Callback" (`qfuonnXY1pL79nUM`), incluindo o padrão de conexão de erro (`onError: continueErrorOutput` no output 1 dos dois nodes HTTP Request, ligado a "Redirect Erro").
 - `GET` webhook recebe `code` + `state` (= `user_id`).
 - Se `error` presente (usuário cancelou): redireciona pra `?googlefit=cancelado`, sem gravar nada.
 - `POST https://oauth2.googleapis.com/token` trocando `code` por tokens (`grant_type=authorization_code`, `client_id`/`client_secret`/`redirect_uri`).
 - Upsert em `google_health_connections` (`on_conflict=user_id`) via PostgREST, headers `apikey`/`Authorization: Bearer {{$env.SUPABASE_SERVICE_ROLE_KEY}}`.
 - Todo HTTP node externo com `onError: continueErrorOutput` → redireciona pra `?googlefit=erro` (nunca deixa o usuário preso numa página de erro crua do N8N — lição aprendida e já corrigida na integração do Strava).
 - Redireciona de volta: `?googlefit=conectado`.
-- **A confirmar na implementação** (via docs/testes reais, não assumir): exato campo/endpoint pra obter `google_health_user_id` — pode vir na resposta do token exchange, num ID token, ou exigir chamada extra de perfil.
+- **`google_health_user_id` resolvido como `null` por enquanto**: o escopo usado (`googlehealth.activity_and_fitness.readonly`) não inclui `openid`/`profile`, então a resposta do token exchange do Google não traz `id_token` nem qualquer identificador de usuário — confirmado batendo o `state` (=`user_id` do Supabase) contra o comportamento padrão documentado do OAuth2 do Google para esse escopo, sem chamada extra de perfil. Não bloqueia a Task 5 (o Poll Diário itera todas as linhas de `google_health_connections` diretamente, sem precisar de lookup por esse ID externo). Se um uso futuro precisar do ID, adicionar `openid`/`profile` ao escopo e decodificar o `id_token`, ou chamar um endpoint de perfil à parte.
+- Testado com `test_workflow` (pin data) nos três caminhos: cancelamento (`error=access_denied` → `Redirect Cancelado`), sucesso (token pinado → `Redirect Conectado`) e falha real (token exchange não pinado, sem `GOOGLE_HEALTH_CLIENT_ID` configurado ainda no servidor → Google retornou 400 `invalid_request` → branch de erro → `Redirect Erro`). Os três terminam em redirect, nenhum trava a execução.
 
 ### 3. N8N — Workflow "Google Health - Poll Diário"
 - **Schedule Trigger** (cron), a cada poucas horas (ajustar frequência depois de ver volume real de usuários conectados — começar com algo como a cada 4h).
