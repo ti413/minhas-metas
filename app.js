@@ -885,10 +885,12 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     const section = document.getElementById('strava-km-section');
     if (!section || !currentUser) return;
     try {
-      const { data: conn } = await sb.from('strava_connections').select('user_id').eq('user_id', currentUser.id).maybeSingle();
+      const { data: conn, error: connError } = await sb.from('strava_connections').select('user_id').eq('user_id', currentUser.id).maybeSingle();
+      if (connError) console.warn('renderStravaCard:', connError);
       if (!conn) { section.style.display = 'none'; return; }
       const hoje = todayStr();
-      const { data: atividades } = await sb.from('strava_activities').select('distance').eq('user_id', currentUser.id).eq('activity_date', hoje);
+      const { data: atividades, error: atividadesError } = await sb.from('strava_activities').select('distance').eq('user_id', currentUser.id).eq('activity_date', hoje);
+      if (atividadesError) console.warn('renderStravaCard:', atividadesError);
       const totalMetros = (atividades || []).reduce((soma, a) => soma + (a.distance || 0), 0);
       const km = (totalMetros / 1000).toFixed(1);
       document.getElementById('strava-km-num').textContent = km;
@@ -1740,7 +1742,7 @@ const DAYS_PT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
     }
     const redirectUri = encodeURIComponent('https://n8n.campostecnologia.cloud/webhook/strava-oauth-callback');
     const state = encodeURIComponent(currentUser.id);
-    const url = `https://www.strava.com/oauth/authorize?client_id=270844&redirect_uri=${redirectUri}&response_type=code&approval_prompt=auto&scope=activity:read&state=${state}`;
+    const url = `https://www.strava.com/oauth/authorize?client_id=270844&redirect_uri=${redirectUri}&response_type=code&approval_prompt=auto&scope=activity:read_all&state=${state}`;
     trackEvent('strava_connect_start', {});
     window.location.href = url;
   }
