@@ -1,5 +1,5 @@
-const CACHE_NAME = 'metas-v6';
-const ASSETS = ['/', '/index.html', '/styles.css?v=6', '/app.js?v=6'];
+const CACHE_NAME = 'metas-v7';
+const ASSETS = ['/', '/index.html', '/styles.css?v=7', '/app.js?v=7'];
 
 self.addEventListener('install', e => {
   self.skipWaiting();
