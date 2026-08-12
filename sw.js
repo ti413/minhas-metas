@@ -1,4 +1,4 @@
-const CACHE_NAME = 'metas-v5';
+const CACHE_NAME = 'metas-v6';
 const ASSETS = ['/', '/index.html', '/styles.css', '/app.js'];
 
 self.addEventListener('install', e => {
