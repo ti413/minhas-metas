@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minhas Metas — Coach de IA para hábitos que duram</title>
+  <meta name="description" content="Metas diárias, coach de IA personalizado e um streak que você não vai querer perder. Comece grátis por 3 dias." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --forest:  #1A2E1F;
+      --green:   #4CAF87;
+      --green-l: #E8F5EE;
+      --ivory:   #F5F0E8;
+      --gold:    #C4974A;
+      --gold-l:  #FBF3E4;
+      --indigo:  #5B6BF5;
+      --indigo-l:#ECEFFE;
+      --muted:   #6B7D72;
+      --border:  #E2EDE7;
+      --white:   #FFFFFF;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      color: var(--forest);
+      background: var(--white);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── HEADER ── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 40px;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-weight: 600; font-size: 18px; color: var(--forest);
+      text-decoration: none; display: flex; align-items: center; gap: 6px;
+    }
+    .nav-logo span { color: var(--green); }
+    .nav-cta {
+      background: var(--green); color: white; border: none;
+      border-radius: 100px; padding: 10px 24px;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+      cursor: pointer; text-decoration: none; transition: opacity .15s;
+    }
+    .nav-cta:hover { opacity: .85; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh; display: flex; align-items: center;
+      padding: 120px 40px 80px; position: relative; overflow: hidden;
+    }
+    .hero-blob {
+      position: absolute; top: -8%; right: -4%; width: 52%; height: 108%;
+      background: var(--green-l);
+      border-radius: 0 0 0 60% / 0 0 50% 0;
+      z-index: 0;
+    }
+    .hero-inner {
+      position: relative; z-index: 1;
+      max-width: 1160px; margin: 0 auto; width: 100%;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 80px; align-items: center;
+    }
+    .hero-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--green-l); border: 1px solid var(--green);
+      color: var(--green); border-radius: 100px;
+      padding: 6px 16px; font-size: 13px; font-weight: 500;
+      margin-bottom: 24px;
+    }
+    .hero-title {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(44px, 5.5vw, 80px);
+      font-weight: 700; line-height: 1.05;
+      color: var(--forest); margin-bottom: 24px;
+      letter-spacing: -.025em;
+    }
+    .hero-title em { font-style: italic; color: var(--green); }
+    .hero-sub {
+      font-size: 17px; color: var(--muted);
+      line-height: 1.65; margin-bottom: 40px; max-width: 420px;
+    }
+    .hero-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .btn {
+      background: var(--green); color: white; border: none;
+      border-radius: 100px; padding: 15px 32px;
+      font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 500;
+      cursor: pointer; text-decoration: none; display: inline-block;
+      transition: opacity .15s, transform .15s;
+    }
+    .btn:hover { opacity: .9; transform: translateY(-1px); }
+    .hero-aside { font-size: 13px; color: var(--muted); }
+
+    /* phone mockup */
+    .hero-phone { display: flex; justify-content: center; }
+    .phone {
+      width: 255px; height: 510px;
+      background: var(--forest); border-radius: 40px; padding: 11px;
+      box-shadow: 0 40px 80px rgba(26,46,31,.28), 0 8px 20px rgba(26,46,31,.14);
+    }
+    .phone-screen {
+      width: 100%; height: 100%;
+      background: #0E1811; border-radius: 30px;
+      overflow: hidden; display: flex; flex-direction: column;
+      padding: 18px 14px; gap: 10px;
+    }
+    .ph-header {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .ph-logo { font-size: 12px; font-weight: 600; color: #4CAF87; }
+    .ph-date {
+      font-size: 10px; color: #6B8C72;
+      background: rgba(76,175,135,.1); padding: 3px 8px; border-radius: 100px;
+    }
+    .ph-streak {
+      background: rgba(76,175,135,.08);
+      border: 1px solid rgba(76,175,135,.18);
+      border-radius: 14px; padding: 11px 13px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .ph-streak-num {
+      font-family: 'Fraunces', serif;
+      font-size: 30px; font-weight: 700; color: #4CAF87; line-height: 1;
+    }
+    .ph-streak-sub { font-size: 10px; color: #6B8C72; margin-top: 2px; }
+    .ph-plant { font-size: 30px; }
+    .ph-label {
+      font-size: 10px; color: #6B8C72;
+      text-transform: uppercase; letter-spacing: .08em;
+    }
+    .ph-item {
+      display: flex; align-items: center; gap: 9px;
+      padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,.04);
+    }
+    .ph-check {
+      width: 19px; height: 19px; border-radius: 5px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px;
+    }
+    .ph-check.done { background: #4CAF87; color: white; }
+    .ph-check.open { background: rgba(76,175,135,.12); border: 1.5px solid rgba(76,175,135,.25); }
+    .ph-text { font-size: 12px; color: #ADC0B3; flex: 1; }
+    .ph-text.done { text-decoration: line-through; color: #4E6655; }
+    .ph-bar-wrap { margin-top: auto; }
+    .ph-bar {
+      height: 5px; background: rgba(76,175,135,.1); border-radius: 100px; overflow: hidden;
+    }
+    .ph-bar-fill {
+      height: 100%; width: 50%; background: #4CAF87; border-radius: 100px;
+    }
+    .ph-bar-text { font-size: 10px; color: #6B8C72; text-align: right; margin-top: 5px; }
+
+    /* ── DARK BAND ── */
+    .band {
+      background: var(--forest); padding: 56px 40px;
+    }
+    .band-inner {
+      max-width: 1160px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 40px; text-align: center;
+    }
+    .band-num {
+      font-family: 'Fraunces', serif;
+      font-size: 52px; font-weight: 700; color: var(--green);
+      line-height: 1; margin-bottom: 8px;
+    }
+    .band-lbl { font-size: 14px; color: rgba(255,255,255,.55); }
+
+    /* ── SECTIONS ── */
+    .sec { padding: 100px 40px; }
+    .sec-ivory { background: var(--ivory); }
+    .wrap { max-width: 1160px; margin: 0 auto; }
+    .eyebrow {
+      font-size: 11px; font-weight: 600; color: var(--green);
+      text-transform: uppercase; letter-spacing: .1em; margin-bottom: 14px;
+    }
+    .sec-title {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(28px, 3.5vw, 48px);
+      font-weight: 700; color: var(--forest);
+      line-height: 1.1; margin-bottom: 48px; max-width: 580px;
+    }
+
+    /* ── FEATURES ── */
+    .feat-grid {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 28px;
+    }
+    .feat-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 20px; padding: 32px;
+    }
+    .feat-icon { font-size: 36px; margin-bottom: 18px; display: block; }
+    .feat-title {
+      font-family: 'Fraunces', serif; font-size: 22px; font-weight: 600;
+      color: var(--forest); margin-bottom: 10px;
+    }
+    .feat-desc { font-size: 15px; color: var(--muted); line-height: 1.65; }
+
+    /* ── COACHES ── */
+    .coaches-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .coach {
+      border-radius: 24px; padding: 40px; position: relative; overflow: hidden;
+    }
+    .coach.jesus {
+      background: var(--gold-l); border: 1px solid rgba(196,151,74,.22);
+    }
+    .coach.eslen {
+      background: var(--indigo-l); border: 1px solid rgba(91,107,245,.22);
+    }
+    .coach-icon { font-size: 44px; margin-bottom: 18px; display: block; }
+    .coach-name {
+      font-family: 'Fraunces', serif; font-size: 28px; font-weight: 700; margin-bottom: 10px;
+    }
+    .coach.jesus .coach-name { color: #7A5A20; }
+    .coach.eslen .coach-name { color: #2B3AAB; }
+    .coach-desc { font-size: 15px; line-height: 1.65; margin-bottom: 22px; }
+    .coach.jesus .coach-desc { color: #8A6930; }
+    .coach.eslen .coach-desc { color: #3444BB; }
+    .coach-quote {
+      font-style: italic; font-size: 14px;
+      padding: 14px 16px; border-radius: 12px; line-height: 1.55;
+    }
+    .coach.jesus .coach-quote { background: rgba(196,151,74,.14); color: #7A5A20; }
+    .coach.eslen .coach-quote { background: rgba(91,107,245,.1); color: #2B3AAB; }
+
+    /* ── PRICING ── */
+    .pricing-wrap { max-width: 460px; margin: 0 auto; }
+    .price-card {
+      background: var(--forest); border-radius: 28px; padding: 48px;
+      text-align: center; position: relative; overflow: hidden;
+    }
+    .price-card::before {
+      content: ''; position: absolute; top: -50px; right: -50px;
+      width: 200px; height: 200px;
+      background: rgba(76,175,135,.12); border-radius: 50%;
+    }
+    .price-badge {
+      display: inline-block;
+      background: rgba(76,175,135,.15); border: 1px solid rgba(76,175,135,.3);
+      color: var(--green); border-radius: 100px;
+      padding: 6px 16px; font-size: 13px; font-weight: 500; margin-bottom: 24px;
+    }
+    .price-num {
+      font-family: 'Fraunces', serif;
+      font-size: 72px; font-weight: 700; color: white;
+      line-height: 1; margin-bottom: 6px;
+    }
+    .price-num sup { font-size: 28px; vertical-align: top; margin-top: 12px; }
+    .price-num small { font-size: 36px; }
+    .price-period { font-size: 14px; color: rgba(255,255,255,.45); margin-bottom: 32px; }
+    .price-list { list-style: none; margin-bottom: 36px; text-align: left; }
+    .price-list li {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,.07);
+      font-size: 15px; color: rgba(255,255,255,.8);
+    }
+    .price-list li:last-child { border-bottom: none; }
+    .price-list li::before {
+      content: '✓';
+      min-width: 22px; height: 22px; border-radius: 50%;
+      background: rgba(76,175,135,.18); color: var(--green);
+      font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .btn-price {
+      display: block; width: 100%;
+      background: var(--green); color: white; border: none;
+      border-radius: 100px; padding: 17px 32px;
+      font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      transition: opacity .15s, transform .15s;
+    }
+    .btn-price:hover { opacity: .9; transform: translateY(-2px); }
+    .price-note { font-size: 13px; color: rgba(255,255,255,.35); margin-top: 14px; }
+
+    /* ── FINAL CTA ── */
+    .cta-final {
+      padding: 120px 40px; text-align: center;
+      background: var(--green-l);
+    }
+    .cta-final .sec-title {
+      max-width: 100%; text-align: center; margin: 0 auto 16px;
+    }
+    .cta-final-sub {
+      font-size: 17px; color: var(--muted); margin-bottom: 40px;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--forest); padding: 40px;
+      text-align: center;
+    }
+    .footer-logo { font-weight: 600; font-size: 18px; color: var(--green); margin-bottom: 12px; }
+    .footer-text { font-size: 13px; color: rgba(255,255,255,.35); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 48px; }
+      .hero-blob { width: 100%; height: 42%; top: auto; bottom: 0; border-radius: 60% 60% 0 0 / 30% 30% 0 0; }
+      .hero-phone { order: -1; }
+      .phone { width: 220px; height: 440px; }
+      .band-inner { grid-template-columns: 1fr; gap: 32px; }
+      .feat-grid { grid-template-columns: 1fr; }
+      .coaches-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      .nav { padding: 14px 20px; }
+      .hero { padding: 100px 20px 60px; }
+      .band { padding: 40px 20px; }
+      .sec { padding: 64px 20px; }
+      .cta-final { padding: 72px 20px; }
+      footer { padding: 32px 20px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<header class="nav">
+  <a href="#" class="nav-logo">🌿 Minhas<span>Metas</span></a>
+  <a href="https://metas.campostecnologia.cloud" class="nav-cta">Começar grátis</a>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-blob"></div>
+  <div class="hero-inner">
+    <div>
+      <div class="hero-pill">🌱 3 dias grátis · sem cartão</div>
+      <h1 class="hero-title">Hábitos que<br><em>crescem</em> com você</h1>
+      <p class="hero-sub">Metas diárias, coach de IA que conhece sua rotina de verdade e um streak que você não vai querer perder. Feito para brasileiros.</p>
+      <div class="hero-actions">
+        <a href="https://metas.campostecnologia.cloud" class="btn">Começar grátis →</a>
+        <span class="hero-aside">Sem compromisso. 3 dias grátis.</span>
+      </div>
+    </div>
+    <div class="hero-phone">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="ph-header">
+            <span class="ph-logo">🌿 MinhasMetas</span>
+            <span class="ph-date">Ter, 24 Jun</span>
+          </div>
+          <div class="ph-streak">
+            <div>
+              <div class="ph-streak-num">12</div>
+              <div class="ph-streak-sub">dias seguidos 🔥</div>
+            </div>
+            <div class="ph-plant">🌿</div>
+          </div>
+          <div class="ph-label">Metas de hoje</div>
+          <div class="ph-item">
+            <div class="ph-check done">✓</div>
+            <span class="ph-text done">Meditar 10 min</span>
+          </div>
+          <div class="ph-item">
+            <div class="ph-check done">✓</div>
+            <span class="ph-text done">Beber 2L de água</span>
+          </div>
+          <div class="ph-item">
+            <div class="ph-check open"></div>
+            <span class="ph-text">Estudar 30 min</span>
+          </div>
+          <div class="ph-item">
+            <div class="ph-check open"></div>
+            <span class="ph-text">Ler 20 páginas</span>
+          </div>
+          <div class="ph-bar-wrap">
+            <div class="ph-bar"><div class="ph-bar-fill"></div></div>
+            <div class="ph-bar-text">50% concluído</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DARK BAND -->
+<div class="band">
+  <div class="band-inner">
+    <div>
+      <div class="band-num">3</div>
+      <div class="band-lbl">dias grátis para começar</div>
+    </div>
+    <div>
+      <div class="band-num">2</div>
+      <div class="band-lbl">coaches de IA disponíveis</div>
+    </div>
+    <div>
+      <div class="band-num" style="font-size:38px">R$9,90</div>
+      <div class="band-lbl">por mês após o trial</div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="sec">
+  <div class="wrap">
+    <div class="eyebrow">O que você ganha</div>
+    <h2 class="sec-title">Tudo que você precisa para não parar no dia 2</h2>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <span class="feat-icon">🎯</span>
+        <h3 class="feat-title">Metas do dia</h3>
+        <p class="feat-desc">Defina suas metas, marque como feitas e veja seu dia tomar forma. O app reseta automaticamente a cada manhã — sem acúmulo de culpa.</p>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">🤖</span>
+        <h3 class="feat-title">Coach de IA</h3>
+        <p class="feat-desc">Um coach que conhece sua rotina de verdade. Conversa com você, entende seu contexto e orienta baseado em como você está evoluindo de verdade.</p>
+      </div>
+      <div class="feat-card">
+        <span class="feat-icon">🔥</span>
+        <h3 class="feat-title">Streak & XP</h3>
+        <p class="feat-desc">Cada dia completo vira um ponto numa sequência que você não vai querer quebrar. Suba de Bronze para Lendário enquanto constrói hábitos reais.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COACHES -->
+<section class="sec sec-ivory">
+  <div class="wrap">
+    <div class="eyebrow">Seu coach</div>
+    <h2 class="sec-title">Escolha quem vai te orientar</h2>
+    <div class="coaches-grid">
+      <div class="coach jesus">
+        <span class="coach-icon">✝️</span>
+        <h3 class="coach-name">Jesus</h3>
+        <p class="coach-desc">Orientação baseada em fé, propósito e escrituras bíblicas contextualizadas para o seu dia. Para quem quer crescer com a espiritualidade como base.</p>
+        <div class="coach-quote">"Posso todas as coisas naquele que me fortalece." — Fp 4:13</div>
+      </div>
+      <div class="coach eslen">
+        <span class="coach-icon">🧠</span>
+        <h3 class="coach-name">Eslen Delanogare</h3>
+        <p class="coach-desc">Neurociência comportamental aplicada à sua rotina. Hábitos que duram porque são construídos do jeito que o cérebro realmente aprende.</p>
+        <div class="coach-quote">"Força de vontade pode ser o começo, mas o ambiente correto é o caminho."</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="sec">
+  <div class="wrap">
+    <div class="eyebrow" style="text-align:center">Preço</div>
+    <h2 class="sec-title" style="text-align:center;max-width:100%;margin-bottom:48px">Simples. Um plano, tudo incluso.</h2>
+    <div class="pricing-wrap">
+      <div class="price-card">
+        <div class="price-badge">🎁 3 dias grátis</div>
+        <div class="price-num"><sup>R$</sup>9<small>,90</small></div>
+        <div class="price-period">por mês · cancele quando quiser</div>
+        <ul class="price-list">
+          <li>Coach de IA ilimitado (Jesus e Eslen)</li>
+          <li>Metas, treinos, livros e finanças</li>
+          <li>Histórico completo e relatórios semanais</li>
+          <li>Sync em todos os dispositivos</li>
+          <li>Gamificação, conquistas e XP</li>
+        </ul>
+        <a href="https://metas.campostecnologia.cloud" class="btn-price">Começar 3 dias grátis →</a>
+        <p class="price-note">Sem cartão para o trial. Assine depois se quiser continuar.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="cta-final">
+  <div class="wrap">
+    <h2 class="sec-title">Hoje é o dia 1<br>da sua sequência.</h2>
+    <p class="cta-final-sub">Junte-se a quem decidiu parar de planejar e começar a fazer.</p>
+    <a href="https://metas.campostecnologia.cloud" class="btn" style="font-size:17px;padding:17px 40px">Começar grátis →</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">🌿 MinhasMetas</div>
+  <p class="footer-text">© 2026 Minhas Metas · Feito para quem não desiste</p>
+</footer>
+
+</body>
+</html>
