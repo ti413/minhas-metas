@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minhas Metas — Você sabe o que precisa fazer.</title>
+  <meta name="description" content="O único obstáculo entre você e quem você quer ser tem o seu nome. Minhas Metas te coloca de frente com sua própria consistência, todos os dias." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,400;1,9..144,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --forest:   #1A2E1F;
+      --forest-d: #0F1F13;
+      --green:    #4CAF87;
+      --green-d:  #3A9A73;
+      --green-l:  #E8F5EE;
+      --border:   #2A4232;
+      --muted:    #7A9485;
+      --gold:     #C4974A;
+      --gold-l:   #FBF3E4;
+      --indigo:   #5B6BF5;
+      --indigo-l: #ECEFFE;
+      --white:    #FFFFFF;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      color: var(--white);
+      background: var(--forest);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 40px;
+      background: rgba(26,46,31,0.88);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(76,175,135,.14);
+    }
+    .nav-logo {
+      font-weight: 600; font-size: 18px; color: var(--white);
+      text-decoration: none; display: flex; align-items: center; gap: 6px;
+    }
+    .nav-logo span { color: var(--green); }
+    .nav-cta {
+      background: var(--green); color: white; border: none;
+      border-radius: 100px; padding: 10px 24px;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      transition: opacity .15s, transform .15s;
+    }
+    .nav-cta:hover { opacity: .88; transform: translateY(-1px); }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; align-items: center;
+      padding: 120px 40px 80px;
+      position: relative; overflow: hidden;
+      background: linear-gradient(135deg, #1A2E1F 0%, #1E3828 40%, #162A1C 100%);
+    }
+
+    /* Padrão de pontos como fundo — remete à textura do app */
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: radial-gradient(circle, rgba(76,175,135,.18) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: radial-gradient(ellipse 80% 80% at 60% 50%, black 10%, transparent 80%);
+    }
+
+    /* Brilho de fundo — glow central */
+    .hero-glow {
+      position: absolute;
+      top: 10%; right: 5%;
+      width: 55%; height: 85%;
+      background: radial-gradient(ellipse, rgba(76,175,135,.14) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      position: relative; z-index: 1;
+      max-width: 1160px; margin: 0 auto; width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 72px; align-items: center;
+    }
+
+    /* LEFT */
+    .hero-label {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 11px; font-weight: 600;
+      color: var(--green); letter-spacing: .15em;
+      text-transform: uppercase; margin-bottom: 28px;
+      background: rgba(76,175,135,.1);
+      border: 1px solid rgba(76,175,135,.2);
+      padding: 5px 14px; border-radius: 100px;
+    }
+
+    .hero-title {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(36px, 5.2vw, 72px);
+      font-weight: 900; line-height: 1.04;
+      letter-spacing: -.025em;
+      color: var(--white);
+      margin-bottom: 28px;
+    }
+    .hero-title em { font-style: italic; color: var(--green); }
+
+    .hero-body {
+      font-size: 17px;
+      color: rgba(255,255,255,.58);
+      line-height: 1.75; margin-bottom: 44px;
+      max-width: 460px;
+    }
+    .hero-body strong { color: rgba(255,255,255,.88); font-weight: 500; }
+
+    .hero-actions { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+
+    .btn-hero {
+      background: var(--green); color: white; border: none;
+      border-radius: 100px; padding: 17px 40px;
+      font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 600;
+      cursor: pointer; text-decoration: none; display: inline-block;
+      transition: opacity .15s, transform .2s;
+      box-shadow: 0 4px 32px rgba(76,175,135,.3);
+    }
+    .btn-hero:hover { opacity: .92; transform: translateY(-2px); box-shadow: 0 8px 48px rgba(76,175,135,.4); }
+
+    .hero-micro { font-size: 13px; color: rgba(255,255,255,.3); }
+
+    /* ── PHONE MOCKUP ── */
+    .hero-phone { display: flex; justify-content: center; position: relative; }
+
+    /* Badge flutuante de conquista */
+    .float-badge {
+      position: absolute;
+      top: -18px; right: -10px;
+      background: linear-gradient(135deg, #F5C842, #E8A020);
+      color: #3A2800;
+      border-radius: 100px;
+      padding: 8px 16px;
+      font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; gap: 6px;
+      box-shadow: 0 4px 20px rgba(245,200,66,.4);
+      z-index: 10;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .phone {
+      width: 268px; height: 530px;
+      background: #0F1C12;
+      border-radius: 42px; padding: 10px;
+      box-shadow:
+        0 0 0 1px rgba(76,175,135,.2),
+        0 40px 80px rgba(0,0,0,.5),
+        0 8px 24px rgba(76,175,135,.12);
+    }
+
+    .phone-screen {
+      width: 100%; height: 100%;
+      background: #111D14;
+      border-radius: 33px;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      padding: 18px 15px 16px;
+      gap: 9px;
+    }
+
+    /* Topo do app */
+    .ph-top {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .ph-app-name { font-size: 12px; font-weight: 600; color: var(--green); }
+    .ph-date { font-size: 10px; color: rgba(255,255,255,.3); background: rgba(255,255,255,.06); padding: 3px 8px; border-radius: 100px; }
+
+    /* Banner de conquista — destaque máximo */
+    .ph-achievement {
+      background: linear-gradient(135deg, rgba(76,175,135,.2), rgba(76,175,135,.08));
+      border: 1px solid rgba(76,175,135,.35);
+      border-radius: 16px;
+      padding: 14px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .ph-ach-icon-wrap {
+      width: 40px; height: 40px; flex-shrink: 0;
+      background: rgba(76,175,135,.2); border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .ph-ach-label {
+      font-size: 9px; font-weight: 700; color: var(--green);
+      text-transform: uppercase; letter-spacing: .1em; margin-bottom: 2px;
+    }
+    .ph-ach-goal {
+      font-size: 12px; font-weight: 600; color: var(--white);
+      line-height: 1.3;
+    }
+    .ph-ach-check {
+      margin-left: auto; flex-shrink: 0;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--green);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: white; font-weight: 700;
+    }
+
+    /* Barra de progresso 100% */
+    .ph-prog-wrap { padding: 0 2px; }
+    .ph-prog-bar {
+      height: 6px; background: rgba(255,255,255,.06); border-radius: 100px; overflow: hidden;
+    }
+    .ph-prog-fill {
+      height: 100%; width: 100%;
+      background: linear-gradient(90deg, var(--green), #78CFAA);
+      border-radius: 100px;
+    }
+    .ph-prog-labels {
+      display: flex; justify-content: space-between; margin-top: 4px;
+    }
+    .ph-prog-labels span { font-size: 9px; color: rgba(255,255,255,.3); }
+    .ph-prog-labels span:last-child { color: var(--green); font-weight: 600; }
+
+    /* Streak */
+    .ph-streak {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,150,50,.08);
+      border: 1px solid rgba(255,150,50,.2);
+      border-radius: 12px; padding: 10px 12px;
+    }
+    .ph-streak-num {
+      font-family: 'Fraunces', serif;
+      font-size: 28px; font-weight: 700; color: #FF9430; line-height: 1;
+    }
+    .ph-streak-label { font-size: 11px; color: rgba(255,150,50,.7); }
+    .ph-streak-plant { margin-left: auto; font-size: 24px; }
+
+    /* Coach message */
+    .ph-coach {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 12px; padding: 11px 12px;
+      display: flex; gap: 8px;
+    }
+    .ph-coach-avatar {
+      width: 26px; height: 26px; border-radius: 8px;
+      background: rgba(91,107,245,.2); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+    }
+    .ph-coach-text { font-size: 11px; color: rgba(255,255,255,.6); line-height: 1.5; }
+    .ph-coach-name { font-size: 10px; color: #8B9AFF; font-weight: 600; margin-top: 4px; }
+
+    /* Recompensas */
+    .ph-rewards {
+      display: flex; gap: 8px;
+    }
+    .ph-xp, .ph-level {
+      flex: 1; border-radius: 10px; padding: 8px 10px;
+      text-align: center;
+    }
+    .ph-xp {
+      background: rgba(76,175,135,.1); border: 1px solid rgba(76,175,135,.2);
+    }
+    .ph-xp-num { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 700; color: var(--green); line-height: 1; }
+    .ph-xp-label { font-size: 9px; color: rgba(76,175,135,.6); margin-top: 2px; }
+    .ph-level {
+      background: rgba(245,200,66,.08); border: 1px solid rgba(245,200,66,.2);
+    }
+    .ph-level-num { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 700; color: #F5C842; line-height: 1; }
+    .ph-level-label { font-size: 9px; color: rgba(245,200,66,.6); margin-top: 2px; }
+
+    /* ── BAND (dark strip) ── */
+    .band {
+      background: var(--forest-d); padding: 48px 40px;
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    }
+    .band-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 40px; text-align: center;
+    }
+    .band-num {
+      font-family: 'Fraunces', serif;
+      font-size: 48px; font-weight: 700; color: var(--green);
+      line-height: 1; margin-bottom: 8px;
+    }
+    .band-lbl { font-size: 14px; color: rgba(255,255,255,.45); }
+
+    /* ── SECTIONS ── */
+    .sec { padding: 96px 40px; }
+    .sec-dark { background: var(--forest-d); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .wrap { max-width: 1100px; margin: 0 auto; }
+    .eyebrow {
+      font-size: 11px; font-weight: 600; color: var(--green);
+      text-transform: uppercase; letter-spacing: .12em; margin-bottom: 14px;
+    }
+    .sec-title {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(28px, 3.4vw, 46px);
+      font-weight: 700; line-height: 1.1;
+      color: var(--white); margin-bottom: 52px;
+    }
+
+    /* ── TRUTH ── */
+    .truth-inner { max-width: 820px; margin: 0 auto; }
+    .truth-paras p {
+      font-size: 18px; color: rgba(255,255,255,.62);
+      line-height: 1.8; margin-bottom: 20px;
+    }
+    .truth-paras p:last-child { margin-bottom: 0; }
+    .truth-paras strong { color: rgba(255,255,255,.9); font-weight: 500; }
+    .truth-callout {
+      margin-top: 48px; padding: 26px 30px;
+      background: rgba(76,175,135,.07);
+      border-left: 3px solid var(--green);
+      border-radius: 0 12px 12px 0;
+      font-family: 'Fraunces', serif;
+      font-size: clamp(19px, 2.3vw, 26px);
+      font-style: italic; color: rgba(255,255,255,.82); line-height: 1.45;
+    }
+
+    /* ── CHANGE GRID ── */
+    .change-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 22px; }
+    .change-card {
+      background: rgba(255,255,255,.03); border: 1px solid var(--border);
+      border-radius: 20px; padding: 30px;
+      transition: border-color .2s, background .2s;
+    }
+    .change-card:hover { border-color: rgba(76,175,135,.3); background: rgba(76,175,135,.04); }
+    .change-num {
+      font-family: 'Fraunces', serif; font-size: 44px; font-weight: 700;
+      color: rgba(76,175,135,.18); line-height: 1; margin-bottom: 14px;
+    }
+    .change-title { font-size: 16px; font-weight: 600; color: var(--white); margin-bottom: 8px; }
+    .change-desc { font-size: 14px; color: rgba(255,255,255,.45); line-height: 1.65; }
+
+    /* ── COACHES ── */
+    .coaches-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+    .coach { border-radius: 22px; padding: 36px; }
+    .coach.jesus { background: rgba(196,151,74,.07); border: 1px solid rgba(196,151,74,.18); }
+    .coach.eslen { background: rgba(91,107,245,.07); border: 1px solid rgba(91,107,245,.18); }
+    .coach-icon { font-size: 38px; margin-bottom: 14px; display: block; }
+    .coach-name { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 700; margin-bottom: 10px; }
+    .coach.jesus .coach-name { color: #E8C17A; }
+    .coach.eslen .coach-name { color: #8B9AFF; }
+    .coach-desc { font-size: 14px; line-height: 1.65; margin-bottom: 18px; }
+    .coach.jesus .coach-desc { color: rgba(232,193,122,.7); }
+    .coach.eslen .coach-desc { color: rgba(139,154,255,.7); }
+    .coach-quote { font-style: italic; font-size: 13px; padding: 12px 14px; border-radius: 10px; line-height: 1.55; }
+    .coach.jesus .coach-quote { background: rgba(196,151,74,.1); color: rgba(232,193,122,.75); }
+    .coach.eslen .coach-quote { background: rgba(91,107,245,.1); color: rgba(139,154,255,.75); }
+
+    /* ── MIRROR ── */
+    .mirror { padding: 100px 40px; text-align: center; }
+    .mirror-inner { max-width: 720px; margin: 0 auto; }
+    .mirror-title {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(30px, 4vw, 54px);
+      font-weight: 900; line-height: 1.05;
+      color: var(--white); margin-bottom: 22px;
+      letter-spacing: -.022em;
+    }
+    .mirror-title em { font-style: italic; color: var(--green); }
+    .mirror-sub { font-size: 17px; color: rgba(255,255,255,.5); line-height: 1.7; margin-bottom: 44px; }
+    .mirror-sub strong { color: rgba(255,255,255,.82); font-weight: 500; }
+
+    /* ── PRICING ── */
+    .pricing { padding: 0 40px 96px; }
+    .pricing-wrap { max-width: 450px; margin: 0 auto; }
+    .price-card {
+      background: rgba(76,175,135,.06);
+      border: 1px solid rgba(76,175,135,.18);
+      border-radius: 28px; padding: 44px;
+      text-align: center; position: relative; overflow: hidden;
+    }
+    .price-card::before {
+      content: '';
+      position: absolute; top: -50px; right: -50px;
+      width: 180px; height: 180px;
+      background: rgba(76,175,135,.07); border-radius: 50%;
+    }
+    .price-badge {
+      display: inline-block;
+      background: rgba(76,175,135,.12); border: 1px solid rgba(76,175,135,.22);
+      color: var(--green); border-radius: 100px;
+      padding: 6px 16px; font-size: 13px; font-weight: 500; margin-bottom: 22px;
+    }
+    .price-num {
+      font-family: 'Fraunces', serif;
+      font-size: 68px; font-weight: 700; color: white;
+      line-height: 1; margin-bottom: 6px;
+    }
+    .price-num sup { font-size: 26px; vertical-align: top; margin-top: 12px; }
+    .price-num small { font-size: 32px; }
+    .price-period { font-size: 14px; color: rgba(255,255,255,.32); margin-bottom: 30px; }
+    .price-list { list-style: none; margin-bottom: 32px; text-align: left; }
+    .price-list li {
+      display: flex; align-items: center; gap: 11px;
+      padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.06);
+      font-size: 14px; color: rgba(255,255,255,.72);
+    }
+    .price-list li:last-child { border-bottom: none; }
+    .price-list li::before {
+      content: '✓';
+      min-width: 20px; height: 20px; border-radius: 50%;
+      background: rgba(76,175,135,.15); color: var(--green);
+      font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .btn-price {
+      display: block; width: 100%;
+      background: var(--green); color: white; border: none;
+      border-radius: 100px; padding: 17px 32px;
+      font-family: 'DM Sans', sans-serif; font-size: 16px; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      transition: opacity .15s, transform .15s;
+      box-shadow: 0 8px 32px rgba(76,175,135,.22);
+    }
+    .btn-price:hover { opacity: .9; transform: translateY(-2px); }
+    .price-note { font-size: 12px; color: rgba(255,255,255,.28); margin-top: 14px; }
+
+    /* ── FINAL ── */
+    .final {
+      padding: 110px 40px;
+      text-align: center;
+      background: linear-gradient(to bottom, var(--forest), var(--forest-d));
+      position: relative; overflow: hidden;
+    }
+    .final::before {
+      content: '';
+      position: absolute; bottom: -40%; left: 50%; transform: translateX(-50%);
+      width: 70%; height: 60%;
+      background: radial-gradient(ellipse, rgba(76,175,135,.07) 0%, transparent 70%);
+    }
+    .final-inner { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; }
+    .final-eyebrow {
+      font-size: 11px; font-weight: 600; color: var(--green);
+      text-transform: uppercase; letter-spacing: .12em; margin-bottom: 18px;
+    }
+    .final-title {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(32px, 5vw, 60px);
+      font-weight: 900; line-height: 1.02;
+      color: var(--white); margin-bottom: 18px;
+      letter-spacing: -.022em;
+    }
+    .final-title em { font-style: italic; color: var(--green); }
+    .final-sub { font-size: 17px; color: rgba(255,255,255,.45); margin-bottom: 44px; line-height: 1.65; }
+    .final-ps { margin-top: 18px; font-size: 13px; color: rgba(255,255,255,.22); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--forest-d); padding: 40px;
+      text-align: center; border-top: 1px solid var(--border);
+    }
+    .footer-logo { font-weight: 600; font-size: 17px; color: var(--green); margin-bottom: 10px; }
+    .footer-text { font-size: 13px; color: rgba(255,255,255,.2); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 960px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 52px; }
+      .hero-actions { align-items: center; }
+      .hero-title { text-align: center; }
+      .hero-body { margin-left: auto; margin-right: auto; text-align: center; }
+      .hero-label { display: flex; justify-content: center; }
+      .hero-phone { order: -1; }
+    }
+    @media (max-width: 700px) {
+      .nav { padding: 14px 20px; }
+      .hero { padding: 110px 20px 72px; }
+      .band { padding: 40px 20px; }
+      .band-inner { grid-template-columns: 1fr; gap: 28px; }
+      .sec { padding: 64px 20px; }
+      .mirror { padding: 72px 20px; }
+      .pricing { padding: 0 20px 72px; }
+      .final { padding: 72px 20px; }
+      footer { padding: 32px 20px; }
+      .change-grid { grid-template-columns: 1fr; }
+      .coaches-grid { grid-template-columns: 1fr; }
+      .phone { width: 230px; height: 460px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<header class="nav">
+  <a href="#" class="nav-logo">🌿 Minhas<span>Metas</span></a>
+  <a href="https://metas.campostecnologia.cloud" class="nav-cta">Começar grátis</a>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-inner">
+
+    <!-- ESQUERDA: COPY -->
+    <div>
+      <div class="hero-label">🌿 Coach de IA para hábitos reais</div>
+      <h1 class="hero-title">
+        O único obstáculo<br>
+        entre você e quem<br>
+        você quer ser<br>
+        <em>tem o seu nome.</em>
+      </h1>
+      <p class="hero-body">
+        Você sabe o que precisa fazer.<br>
+        <strong>O problema nunca foi informação. Foi consistência.</strong><br>
+        E consistência é uma decisão — não um sentimento.
+      </p>
+      <div class="hero-actions">
+        <a href="https://metas.campostecnologia.cloud" class="btn-hero">Sim, quero começar hoje →</a>
+        <span class="hero-micro">3 dias grátis · sem cartão · cancele quando quiser</span>
+      </div>
+    </div>
+
+    <!-- DIREITA: CELULAR COM CONQUISTA -->
+    <div class="hero-phone">
+      <div class="float-badge">🏆 Meta Atingida!</div>
+      <div class="phone">
+        <div class="phone-screen">
+
+          <!-- Topo -->
+          <div class="ph-top">
+            <span class="ph-app-name">🌿 MinhasMetas</span>
+            <span class="ph-date">Ter, 24 Jun</span>
+          </div>
+
+          <!-- Banner de conquista -->
+          <div class="ph-achievement">
+            <div class="ph-ach-icon-wrap">🎯</div>
+            <div>
+              <div class="ph-ach-label">Meta atingida</div>
+              <div class="ph-ach-goal">Perder 5kg em 90 dias</div>
+            </div>
+            <div class="ph-ach-check">✓</div>
+          </div>
+
+          <!-- Barra 100% -->
+          <div class="ph-prog-wrap">
+            <div class="ph-prog-bar"><div class="ph-prog-fill"></div></div>
+            <div class="ph-prog-labels"><span>0 kg</span><span>✓ 100% — 5kg</span></div>
+          </div>
+
+          <!-- Streak -->
+          <div class="ph-streak">
+            <div>
+              <div class="ph-streak-num">47</div>
+              <div class="ph-streak-label">dias seguidos 🔥</div>
+            </div>
+            <div class="ph-streak-plant">🌳</div>
+          </div>
+
+          <!-- Coach -->
+          <div class="ph-coach">
+            <div class="ph-coach-avatar">🧠</div>
+            <div>
+              <div class="ph-coach-text">"Maria, você disse que não conseguiria. Seus 47 dias provam o contrário."</div>
+              <div class="ph-coach-name">— Eslen Delanogare</div>
+            </div>
+          </div>
+
+          <!-- Recompensas -->
+          <div class="ph-rewards">
+            <div class="ph-xp">
+              <div class="ph-xp-num">+500</div>
+              <div class="ph-xp-label">⚡ XP ganhos</div>
+            </div>
+            <div class="ph-level">
+              <div class="ph-level-num">Ouro</div>
+              <div class="ph-level-label">🏆 Nível atual</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- BAND -->
+<div class="band">
+  <div class="band-inner">
+    <div>
+      <div class="band-num">3</div>
+      <div class="band-lbl">dias grátis para começar</div>
+    </div>
+    <div>
+      <div class="band-num">2</div>
+      <div class="band-lbl">coaches de IA disponíveis</div>
+    </div>
+    <div>
+      <div class="band-num" style="font-size:38px">R$9,90</div>
+      <div class="band-lbl">por mês após o trial</div>
+    </div>
+  </div>
+</div>
+
+<!-- VERDADE -->
+<section class="sec sec-dark">
+  <div class="truth-inner">
+    <div class="eyebrow">A conversa que você precisa ter</div>
+    <h2 class="sec-title" style="max-width:600px">Toda segunda-feira você <em style="font-style:italic;color:var(--green)">recomeça.</em></h2>
+    <div class="truth-paras">
+      <p>Toda noite de domingo você planeja. Toda manhã de segunda a intenção está lá — firme, clara, real. E aí o dia começa. Uma mensagem, uma reunião, um cansaço que parecia menor quando você estava planejando. E o plano vai ficando <strong>para depois.</strong></p>
+      <p>Para amanhã. Para a próxima semana. Para quando as coisas acalmarem.</p>
+      <p><strong>As coisas não vão acalmar.</strong> Você sabe disso.</p>
+      <p>E enquanto isso, a versão de você que existe nas suas noites de domingo — mais saudável, mais focada, mais realizada — continua esperando a sua decisão. Não uma motivação. Não uma circunstância melhor. <strong>Uma decisão.</strong></p>
+      <p>Seus sonhos não faliram. Você só ainda não decidiu que eles importam mais do que o conforto de não tentar.</p>
+    </div>
+    <div class="truth-callout">
+      "O desconforto de tentar é temporário.<br>
+      O peso de não ter tentado dura a vida toda."
+    </div>
+  </div>
+</section>
+
+<!-- O QUE MUDA -->
+<section class="sec">
+  <div class="wrap">
+    <div class="eyebrow">O que o app faz por você</div>
+    <h2 class="sec-title">Não é motivação. É responsabilidade.</h2>
+    <div class="change-grid">
+      <div class="change-card">
+        <div class="change-num">01</div>
+        <div class="change-title">Suas metas, todos os dias</div>
+        <p class="change-desc">Você define o que importa. O app te coloca de frente com isso toda manhã — sem julgamento, sem enrolação. Feito ou não feito. Simples.</p>
+      </div>
+      <div class="change-card">
+        <div class="change-num">02</div>
+        <div class="change-title">Um coach que te conhece de verdade</div>
+        <p class="change-desc">IA que conhece sua rotina, seus padrões, onde você trava. Não dá motivação barata — dá orientação baseada em quem você realmente é.</p>
+      </div>
+      <div class="change-card">
+        <div class="change-num">03</div>
+        <div class="change-title">O streak que você não vai querer perder</div>
+        <p class="change-desc">Cada dia completo vira uma sequência. 7, 14, 47 dias não é uma estatística — é prova de que você é capaz de mudar.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COACHES -->
+<section class="sec sec-dark">
+  <div class="wrap">
+    <div class="eyebrow">Seu coach</div>
+    <h2 class="sec-title">Escolha quem vai te responsabilizar</h2>
+    <div class="coaches-grid">
+      <div class="coach jesus">
+        <span class="coach-icon">✝️</span>
+        <h3 class="coach-name">Jesus</h3>
+        <p class="coach-desc">Fé como fundação, propósito como combustível. Orientação que conecta cada meta da sua rotina com quem você foi chamado a ser.</p>
+        <div class="coach-quote">"Posso todas as coisas naquele que me fortalece." — Fp 4:13</div>
+      </div>
+      <div class="coach eslen">
+        <span class="coach-icon">🧠</span>
+        <h3 class="coach-name">Eslen Delanogare</h3>
+        <p class="coach-desc">Neurociência comportamental sem enrolação. Hábitos construídos do jeito que o cérebro aprende — porque força de vontade sozinha nunca foi suficiente.</p>
+        <div class="coach-quote">"Força de vontade pode ser o começo, mas o ambiente correto é o caminho."</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ESPELHO -->
+<section class="mirror">
+  <div class="mirror-inner">
+    <h2 class="mirror-title">
+      Cada semana que passa<br>
+      não é uma semana atrasada.<br>
+      É uma semana <em>escolhida.</em>
+    </h2>
+    <p class="mirror-sub">
+      Você não está faltando motivação.<br>
+      Está faltando um sistema que te responsabilize quando a motivação — inevitavelmente — for embora.<br><br>
+      <strong>Minhas Metas é esse sistema.</strong>
+    </p>
+    <a href="https://metas.campostecnologia.cloud" class="btn-hero">Quero parar de esperar →</a>
+    <div style="margin-top:12px;font-size:13px;color:rgba(255,255,255,.28)">3 dias grátis para descobrir o que acontece quando você decide</div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing">
+  <div class="pricing-wrap">
+    <div class="price-card">
+      <div class="price-badge">🎁 3 dias grátis para provar a si mesmo</div>
+      <div class="price-num"><sup>R$</sup>9<small>,90</small></div>
+      <div class="price-period">por mês · cancele quando quiser</div>
+      <ul class="price-list">
+        <li>Coach de IA ilimitado (Jesus ou Eslen)</li>
+        <li>Metas diárias, treinos, livros e finanças</li>
+        <li>Streak, XP e conquistas desbloqueáveis</li>
+        <li>Histórico e relatórios semanais</li>
+        <li>Sync em todos os seus dispositivos</li>
+      </ul>
+      <a href="https://metas.campostecnologia.cloud" class="btn-price">Sim, quero começar hoje →</a>
+      <p class="price-note">Sem cartão no trial. Você decide depois se quer continuar.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <div class="final-inner">
+    <div class="final-eyebrow">A decisão é sua</div>
+    <h2 class="final-title">
+      Hoje é o <em>dia 1</em><br>
+      da sua sequência.
+    </h2>
+    <p class="final-sub">
+      Você pode fechar essa página e continuar planejando.<br>
+      Ou pode decidir agora que os seus sonhos merecem mais do que uma intenção.
+    </p>
+    <a href="https://metas.campostecnologia.cloud" class="btn-hero">Começar os 3 dias grátis →</a>
+    <p class="final-ps">P.S. — Enquanto você lê isso, alguém com o mesmo ponto de partida que você já começou o dia 1.</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">🌿 MinhasMetas</div>
+  <p class="footer-text">© 2026 Minhas Metas · Feito para quem não desiste</p>
+</footer>
+
+</body>
+</html>
